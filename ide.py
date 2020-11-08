@@ -1,4 +1,4 @@
-import pygame, sys
+import pygame, sys, wx
 
 class Pic:
 	def __init__(self, fileName):
@@ -15,11 +15,48 @@ class Pic:
 			for x in range(-n, n + 1):
 				pixelGrid[y + n][x + n] = self.img.get_at((x + x0, y + y0))
 
+class Button:
+	def __init__(self, picFile, bg, x, y, appID, **txt):
+		self.img = pygame.image.load(picFile).convert()
+		self.bg = pygame.image.load(bg).convert()
+		self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
+		self.x, self.y = x, y
+		self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+		self.status = 0
+		self.appID = appID
+		self.txt = txt
+
+	def draw(self, screen):
+		screen.blit(self.bg, (self.x, self.y),
+					(self.status * self.rect.w, 0,
+					 self.rect.w, self.rect.h))
+		screen.blit(self.img, (self.x + 8, self.y + 8))
+		if self.txt:
+			screen.blit(self.txt["font"].render(self.txt["content"], True, (0,0,0)), \
+						(self.x + self.w // 2 - 4 * len(self.txt["content"]), self.y + self.h // 2 - 8))
+	def onClick(self, app):
+		pass
+	def mouseDown(self, pos, button, app):
+		if self.rect.collidepoint(pos):
+			self.status = 2
+			self.onClick(self, app)
+	def mouseUp(self, pos, button):
+		self.status = 0
+		if not self.rect.collidepoint(pos):
+			return
+		framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
+		framework.appID = self.appID
+	def mouseMove(self, pos):
+		if self.rect.collidepoint(pos):
+			self.status = 1
+		else:
+			self.status = 0
+
 class Kernel:
 	def __init__(self):
 		pygame.init()
 		self.screen = pygame.display.set_mode((1280, 720))
-		pygame.display.set_caption("Winnux 58")
+		pygame.display.set_caption("GENOCIDE")
 		self.clock = pygame.time.Clock()
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 		self.speed = 5
@@ -76,7 +113,7 @@ class App:
 		self.txtField.w, self.txtField.h = w, h
 	def mouseDown(self, pos, button):
 		for btn in self.btnList:
-			btn.mouseDown(pos, button)
+			btn.mouseDown(pos, button, self)
 	def mouseUp(self, pos, button):
 		for button in self.btnList:
 			button.mouseUp(pos, button)
@@ -243,11 +280,28 @@ class TxtField:
 				self.loc += 1
 				self.maxIndex += 1
 
+def save(self, app):
+	wx.App()
+	framework = wx.Frame(None, -1, '')
+	with wx.FileDialog(framework, "Save file", wildcard="Any file|*",
+                       style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+		if fileDialog.ShowModal() == wx.ID_CANCEL:
+			return
+		path = fileDialog.GetPath()
+		with open(path, 'w') as fw:
+			s = ''
+			for ch, clr in app.txtField.txtBuffer:
+				s += ch
+			fw.write(s)
+
 framework = Kernel()
 ide = App("res/bg.jpg")
+save_btn = Button("res/icons/save.png", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+save_btn.onClick = save
+ide.addButton(save_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
-ide.enableTxtField(50, 60, 100, 40)
+ide.enableTxtField(150, 160, 100, 40)
 
 while True:
 	for event in pygame.event.get():
