@@ -52,7 +52,7 @@ class Button:
 		else:
 			self.status = 0
 
-class Kernel:
+class Framework:
 	def __init__(self):
 		pygame.init()
 		self.screen = pygame.display.set_mode((1280, 720))
@@ -152,9 +152,7 @@ class TxtField:
 				self.rect = self.image.get_rect()
 
 		self.cursor = Cursor()
-
 		self.frame = 0
-
 	def wrap(self, txtBuffer):
 		self.frame += 1
 		lines = []
@@ -284,10 +282,10 @@ class TxtField:
 				self.loc += 1
 				self.maxIndex += 1
 
-def save(self, app):
+def saveAs(self, app):
 	wapp = wx.App()
 	framework = wx.Frame(None, -1, '')
-	with wx.FileDialog(framework, "Save file", wildcard="Any file|*",
+	with wx.FileDialog(framework, "Save file as...", wildcard="C++ Source File (*.cpp)|*.cpp|All Files (*.*)|*.*",
                        style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
@@ -298,10 +296,10 @@ def save(self, app):
 				s += ch
 			fw.write(s)
 
-framework = Kernel()
+framework = Framework()
 ide = App("res/bg.jpg")
-save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
-save_btn.onClick = save
+save_btn = Button("res/icons/save.png", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+save_btn.onClick = saveAs
 ide.addButton(save_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
