@@ -137,8 +137,8 @@ class TxtField:
 		# MAGIC #
 		self.caps = { '`': '~', '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S', 't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z' }
 		self.shift, self.capsLock = False, False
-		self.currentLine, self.loc, self.maxIndex = 0, 0, 0
-		self.lineNum = 0
+		self.currentChar, self.loc, self.maxIndex = 0, 0, 0
+		self.lineNum = 0; self.maxLine = 0
 		self.cLineStr = ""
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 		
@@ -167,7 +167,7 @@ class TxtField:
 		if self.maxIndex < 0: self.loc = 0
 		for i in range(len(txtBuffer)):
 			if txtBuffer[i][0] == '\n':
-				self.currentLine = i + 1
+				self.currentChar = i + 1
 				lines.append([])
 				for ch, clr in ph:
 					lines[-1].append((ch, clr))
@@ -176,7 +176,7 @@ class TxtField:
 				prev_i = i
 			elif txtBuffer[i][0] == '\r' or (i != 0 and (i - prev_i) % self.w == 0):
 				ph += txtBuffer[i] if txtBuffer[i][0] not in ('\n', '\r', ' ', '') else ''
-				self.currentLine = i + 1
+				self.currentChar = i + 1
 				lines.append(ph)
 				ph = ''
 				prev_i = i
@@ -224,13 +224,16 @@ class TxtField:
 			ct += 1
 			if ch == '\n': i += 1
 		if key == pygame.K_BACKSPACE:
-			if (self.txtBuffer and self.txtBuffer[-1][0] != '\n') or not self.txtBuffer:
-				try:
-					if self.loc - 1 != -1:
-						self.txtBuffer.pop(ct + self.loc - 1)
-						self.maxIndex -= 1
-						self.loc -= 1
-				except: pass
+			try:
+				self.txtBuffer.pop(ct + self.loc - 1)
+				if self.loc - 1 != -1:
+					self.maxIndex -= 1
+					self.loc -= 1
+				else:
+					changeLine(self.lineNum - 1)
+					self.loc = self.maxIndex
+					self.maxLine -= 1
+			except: pass
 		elif key == pygame.K_DELETE:
 			try:
 				if self.loc > self.maxIndex:
@@ -249,10 +252,11 @@ class TxtField:
 			# TODO: process enter
 			self.lineNum += 1
 			self.txtBuffer.append(('\n', (0, 0, 0)))
+			self.maxLine += 1
 		elif key == pygame.K_TAB:
 			for _ in range(4):
-				self.txtBuffer.append((' ', (0, 0, 0)))
-				self.loc += 1
+				self.txtBuffer.insert(self.loc + ct, (' ', (0, 0, 0)))
+			self.loc += 4; self.maxIndex += 4
 		elif key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
 			self.shift = True
 		elif key == pygame.K_CAPSLOCK:
@@ -261,7 +265,7 @@ class TxtField:
 			if self.lineNum != 0:
 				changeLine(self.lineNum - 1)
 		elif key == pygame.K_DOWN:
-			if self.lineNum != self.currentLine:
+			if self.lineNum != self.maxLine:
 				changeLine(self.lineNum + 1)
 		elif key == pygame.K_LEFT:
 			if self.loc != 0:
@@ -281,7 +285,7 @@ class TxtField:
 				self.maxIndex += 1
 
 def save(self, app):
-	wx.App()
+	wapp = wx.App()
 	framework = wx.Frame(None, -1, '')
 	with wx.FileDialog(framework, "Save file", wildcard="Any file|*",
                        style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
@@ -296,7 +300,7 @@ def save(self, app):
 
 framework = Kernel()
 ide = App("res/bg.jpg")
-save_btn = Button("res/icons/save.png", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
 save_btn.onClick = save
 ide.addButton(save_btn)
 framework.appID = ide.appID
