@@ -3,7 +3,7 @@
 int main()
 {
 	char buf[1024];
-	gets(buf);
+	scanf("%s", buf);
 	puts(buf);
 	return 0;
 }
