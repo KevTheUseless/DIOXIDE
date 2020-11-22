@@ -298,7 +298,7 @@ def saveAs(self, app):
 
 framework = Framework()
 ide = App("res/bg.jpg")
-save_btn = Button("res/icons/save.png", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
 save_btn.onClick = saveAs
 ide.addButton(save_btn)
 framework.appID = ide.appID

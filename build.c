@@ -32,6 +32,12 @@ char buffer[1073741824];
 
 int main(int argc, char **argv)
 {
+	if (!argv[1])
+	{
+		printf("Missing argument.\nUsage: ./build <filename>\nPress any key to continue. . . ");
+		getch();
+		return 0;
+	}
 	sprintf(buffer, "g++ %s.cpp -o %s -std=gnu++98", argv[1], argv[1]);
 	#if defined(WIN32)
 		system("@set path=./MinGW/bin/;%path%");
@@ -44,7 +50,7 @@ int main(int argc, char **argv)
 	#endif
 	int exitcode = system(buffer);
 	printf("Process terminated with return code %d.\n", exitcode);
-	printf("Press any key to continue. . .\n");
+	printf("Press any key to continue. . . ");
 	getch();
 	return 0;
 }
