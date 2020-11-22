@@ -285,7 +285,6 @@ class TxtField:
 				self.loc += 1
 				self.maxIndex += 1
 
-
 def new(self, app):
 	pass   # TODO: integrate new file w/ multitabing
 
@@ -343,6 +342,13 @@ compile_run_btn = Button("res/icons/compile_run.jpg", "res/icons/btn_bg.jpg", 31
 # TODO: compile & run
 ide.addButton(new_btn)
 ide.addButton(open_btn)
+def compilecpp(flags):
+	flags.insert(0, "./build")
+	if int(flags[2]) == 0:
+		subprocess.run(flags)
+	elif int(flags[2]) == 1:
+		subprocess.run(flags, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
 ide.addButton(save_btn)
 ide.addButton(save_as_btn)
 ide.addButton(compile_btn)
