@@ -34,29 +34,28 @@ char buffer[1073741824];
 
 int main(int argc, char **argv)
 {
-	if (!argv[1])
+	if (argc < 3)
 	{
-		printf("Missing argument.\nUsage: ./build <filename>\nPress any key to continue. . . ");
+		printf("Missing argument.\nUsage: ./build <runflag> <filename> <other flags>\nPress any key to continue. . . ");
 		getch();
 		return 0;
 	}
-	sprintf(buffer, "g++ %s.cpp -o %s", argv[1], argv[1]);
+	sprintf(buffer, "g++ %s.cpp -o %s", argv[2], argv[2]);
 	for (int i = 3; i < argc; i++)
 		sprintf(buffer + strlen(buffer), " %s", argv[i]);
-	printf("%s\n", buffer);
 	#if defined(WIN32)
 		system("@set path=./MinGW/bin/;%path%");
 	#endif
 	system(buffer);
-	if (strtol(argv[2], NULL, 10) == RUN)
+	if (strtol(argv[1], NULL, 10) == RUN)
 	{
 		#if defined(WIN32)
-			sprintf(buffer, "%s", argv[1]);
+			sprintf(buffer, "%s", argv[2]);
 		#else
-			sprintf(buffer, "./%s", argv[1]);
+			sprintf(buffer, "./%s", argv[2]);
 		#endif
 		int exitcode = system(buffer);
-		printf("Process terminated with return code %d.\n", exitcode);
+		printf("\nProcess terminated with return code %d.\n", exitcode);
 		printf("Press any key to continue. . . ");
 		getch();
 	}

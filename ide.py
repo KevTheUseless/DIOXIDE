@@ -1,4 +1,4 @@
-import pygame, sys, wx
+import pygame, sys, os, wx, subprocess
 wapp = wx.App()
 frm = wx.Frame(None, -1, '')
 
@@ -285,8 +285,26 @@ class TxtField:
 				self.loc += 1
 				self.maxIndex += 1
 
+def getch():
+	# Code from https://blog.csdn.net/damiaomiao666/article/details/50494581
+	# by user 小杰666, with minor modifications
+
+	import sys, termios
+
+	fd = sys.stdin.fileno()
+	old = termios.tcgetattr(fd)
+	new = termios.tcgetattr(fd)
+	# turn off echo and press-enter
+	new[3] = new[3] & ~termios.ECHO & ~termios.ICANON
+
+	try:
+		termios.tcsetattr(fd, termios.TCSADRAIN, new)
+		sys.stdin.read(1)
+	finally:
+		termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
 def new(self, app):
-	pass   # TODO: integrate new file w/ multitabing
+	pass # TODO: integrate new file w/ multitabbing
 
 def open_file(self, app):
 	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
@@ -303,7 +321,7 @@ def open_file(self, app):
 		app.txtField.changeLine(0)
 
 def save_as(self, app):
-	with wx.FileDialog(frm, "Save as", wildcard="Any file|*",
+	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
 					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
@@ -325,29 +343,51 @@ def save(self, app):
 	else:
 		save_as(self, app)
 
+def compile_cpp(self, app, run=0):
+	compileFlags.insert(0, app.txtField.fileName.rstrip(".cpp"))
+	compileFlags.insert(0, str(run))
+	compileFlags.insert(0, "./build")
+	print(compileFlags)
+	cmd = " ".join(compileFlags)
+	for i in range(3): compileFlags.pop(0)
+	if run == 0:
+		subprocess.run(cmd)
+	elif run == 1:
+		subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+def compile_run_cpp(self, app, compileFlags = []):
+	compile_cpp(self, app, 1)
+
+def run_cpp(self, app):
+	pass # TODO: run code w/o compiling
+
 framework = Framework()
 ide = App("res/bg.jpg")
 new_btn = Button("res/icons/new.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
 new_btn.onClick = new
+
 open_btn = Button("res/icons/open.jpg", "res/icons/btn_bg.jpg", 60, 10, ide.appID)
 open_btn.onClick = open_file
+
 save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 110, 10, ide.appID)
 save_btn.onClick = save
+
 save_as_btn = Button("res/icons/save_as.jpg", "res/icons/btn_bg.jpg", 160, 10, ide.appID)
+save_as_btn.onClick = save_as
+
+compileFlags = []
+
 compile_btn = Button("res/icons/compile.jpg", "res/icons/btn_bg.jpg", 210, 10, ide.appID)
-# TODO: compile
+compile_btn.onClick = compile_cpp
+
 run_btn = Button("res/icons/run.jpg", "res/icons/btn_bg.jpg", 260, 10, ide.appID)
-# TODO: run
+run_btn.onClick = run_cpp
+
 compile_run_btn = Button("res/icons/compile_run.jpg", "res/icons/btn_bg.jpg", 310, 10, ide.appID)
-# TODO: compile & run
+compile_run_btn.onClick = compile_run_cpp
+
 ide.addButton(new_btn)
 ide.addButton(open_btn)
-def compilecpp(flags):
-	flags.insert(0, "./build")
-	if int(flags[2]) == 0:
-		subprocess.run(flags)
-	elif int(flags[2]) == 1:
-		subprocess.run(flags, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 ide.addButton(save_btn)
 ide.addButton(save_as_btn)
