@@ -1,4 +1,0 @@
-a.cpp: In function 'int main()':
-a.cpp:2:28: error: expected ';' before '}' token
- int main() {printf("hello")}
-                            ^
