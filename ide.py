@@ -326,7 +326,7 @@ def save(self, app):
 	else:
 		save_as(self, app)
 
-framework = Kernel()
+framework = Framework()
 ide = App("res/bg.jpg")
 new_btn = Button("res/icons/new.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
 new_btn.onClick = new
