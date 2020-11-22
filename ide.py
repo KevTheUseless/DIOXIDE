@@ -1,6 +1,4 @@
 import pygame, sys, wx
-wapp = wx.App()
-frm = wx.Frame(None, -1, '')
 
 class Pic:
 	def __init__(self, fileName):
@@ -143,8 +141,6 @@ class TxtField:
 		self.lineNum = 0; self.maxLine = 0
 		self.cLineStr = ""
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
-
-		self.fileName = ''
 		
 		class Cursor(pygame.sprite.Sprite):
 			def __init__(self):
@@ -212,14 +208,14 @@ class TxtField:
 			self.shift = False
 		elif key == pygame.K_CAPSLOCK:
 			self.capsLock = 1 - self.capsLock
-	def changeLine(self, l):
-		s = ''
-		for ch, clr in self.txtBuffer:
-			s += ch
-		self.lineNum = l
-		self.maxIndex = len(s.split('\n')[l])
-		self.loc = min(self.loc, self.maxIndex)
 	def keyDown(self, key):
+		def changeLine(l):
+			s = ''
+			for ch, clr in self.txtBuffer:
+				s += ch
+			self.lineNum = l
+			self.maxIndex = len(s.split('\n')[l])
+			self.loc = min(self.loc, self.maxIndex)
 		i = 0; ct = 0
 		for ch, clr in self.txtBuffer:
 			if i == self.lineNum: break
@@ -232,7 +228,7 @@ class TxtField:
 					self.maxIndex -= 1
 					self.loc -= 1
 				else:
-					self.changeLine(self.lineNum - 1)
+					changeLine(self.lineNum - 1)
 					self.loc = self.maxIndex
 					self.maxLine -= 1
 			except: pass
@@ -251,6 +247,7 @@ class TxtField:
 			while len(self.txtBuffer) > - i - 1 and self.txtBuffer[i][0] != '\n':
 				cmd = self.txtBuffer[i][0] + cmd
 				i -= 1
+			# TODO: process enter
 			self.lineNum += 1
 			self.txtBuffer.append(('\n', (0, 0, 0)))
 			self.maxLine += 1
@@ -264,10 +261,10 @@ class TxtField:
 			self.capsLock = 1 - self.capsLock
 		elif key == pygame.K_UP:
 			if self.lineNum != 0:
-				self.changeLine(self.lineNum - 1)
+				changeLine(self.lineNum - 1)
 		elif key == pygame.K_DOWN:
 			if self.lineNum != self.maxLine:
-				self.changeLine(self.lineNum + 1)
+				changeLine(self.lineNum + 1)
 		elif key == pygame.K_LEFT:
 			if self.loc != 0:
 				self.loc -= 1
@@ -285,69 +282,25 @@ class TxtField:
 				self.loc += 1
 				self.maxIndex += 1
 
-
-def new(self, app):
-	pass   # TODO: integrate new file w/ multitabing
-
-def open_file(self, app):
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+def saveAs(self, app):
+	wapp = wx.App()
+	framework = wx.Frame(None, -1, '')
+	with wx.FileDialog(framework, "Save file as...", wildcard="C++ Source File (*.cpp)|*.cpp|All Files (*.*)|*.*",
+                       style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
 		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'r') as fr:
-			for ch in fr.read():
-				app.txtField.txtBuffer.append((ch, (255, 255, 255)))
-				if ch == '\n':
-					app.txtField.maxLine += 1
-		app.txtField.changeLine(0)
-
-def save_as(self, app):
-	with wx.FileDialog(frm, "Save as", wildcard="Any file|*",
-					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
 		with open(path, 'w') as fw:
 			s = ''
 			for ch, clr in app.txtField.txtBuffer:
 				s += ch
 			fw.write(s)
-			
-def save(self, app):
-	s = ''
-	for ch, clr in app.txtField.txtBuffer:
-		s += ch
-	if app.txtField.fileName:
-		with open(app.txtField.fileName, 'w') as fw:
-			fw.write(s)
-	else:
-		save_as(self, app)
 
-framework = Kernel()
+framework = Framework()
 ide = App("res/bg.jpg")
-new_btn = Button("res/icons/new.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
-new_btn.onClick = new
-open_btn = Button("res/icons/open.jpg", "res/icons/btn_bg.jpg", 60, 10, ide.appID)
-open_btn.onClick = open_file
-save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 110, 10, ide.appID)
-save_btn.onClick = save
-save_as_btn = Button("res/icons/save_as.jpg", "res/icons/btn_bg.jpg", 160, 10, ide.appID)
-compile_btn = Button("res/icons/compile.jpg", "res/icons/btn_bg.jpg", 210, 10, ide.appID)
-# TODO: compile
-run_btn = Button("res/icons/run.jpg", "res/icons/btn_bg.jpg", 260, 10, ide.appID)
-# TODO: run
-compile_run_btn = Button("res/icons/compile_run.jpg", "res/icons/btn_bg.jpg", 310, 10, ide.appID)
-# TODO: compile & run
-ide.addButton(new_btn)
-ide.addButton(open_btn)
+save_btn = Button("res/icons/save.png", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+save_btn.onClick = saveAs
 ide.addButton(save_btn)
-ide.addButton(save_as_btn)
-ide.addButton(compile_btn)
-ide.addButton(run_btn)
-ide.addButton(compile_run_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
 ide.enableTxtField(150, 160, 100, 40)
