@@ -286,7 +286,7 @@ def saveAs(self, app):
 	wapp = wx.App()
 	framework = wx.Frame(None, -1, '')
 	with wx.FileDialog(framework, "Save file as...", wildcard="C++ Source File (*.cpp)|*.cpp|All Files (*.*)|*.*",
-                       style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
 		path = fileDialog.GetPath()
@@ -295,6 +295,15 @@ def saveAs(self, app):
 			for ch, clr in app.txtField.txtBuffer:
 				s += ch
 			fw.write(s)
+
+def compilecpp(flags):
+	flags.insert(0, "./build")
+	if int(flags[2]) == 0:
+		subprocess.run(flags)
+	elif int(flags[2]) == 1:
+		subprocess.run(flags, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+
 
 framework = Framework()
 ide = App("res/bg.jpg")

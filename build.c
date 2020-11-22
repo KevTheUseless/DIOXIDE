@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define RUN 1
+
 #if defined(WIN32)
 	#include <conio.h>
 #else
@@ -38,19 +40,25 @@ int main(int argc, char **argv)
 		getch();
 		return 0;
 	}
-	sprintf(buffer, "g++ %s.cpp -o %s -std=gnu++98", argv[1], argv[1]);
+	sprintf(buffer, "g++ %s.cpp -o %s", argv[1], argv[1]);
+	for (int i = 3; i < argc; i++)
+		sprintf(buffer + strlen(buffer), " %s", argv[i]);
+	printf("%s\n", buffer);
 	#if defined(WIN32)
 		system("@set path=./MinGW/bin/;%path%");
 	#endif
 	system(buffer);
-	#if defined(WIN32)
-		sprintf(buffer, "%s", argv[1]);
-	#else
-		sprintf(buffer, "./%s", argv[1]);
-	#endif
-	int exitcode = system(buffer);
-	printf("Process terminated with return code %d.\n", exitcode);
-	printf("Press any key to continue. . . ");
-	getch();
+	if (strtol(argv[2], NULL, 10) == RUN)
+	{
+		#if defined(WIN32)
+			sprintf(buffer, "%s", argv[1]);
+		#else
+			sprintf(buffer, "./%s", argv[1]);
+		#endif
+		int exitcode = system(buffer);
+		printf("Process terminated with return code %d.\n", exitcode);
+		printf("Press any key to continue. . . ");
+		getch();
+	}
 	return 0;
 }
