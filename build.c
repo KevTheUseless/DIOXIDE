@@ -2,8 +2,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
-#define RUN 1
+#define BUILD		0
+#define RUN			1
+#define BUILDRUN	2
 
 #if defined(WIN32)
 	#include <conio.h>
@@ -36,26 +39,32 @@ int main(int argc, char **argv)
 {
 	if (argc < 3)
 	{
-		printf("Missing argument.\nUsage: ./build <runflag> <filename> <other flags>\nPress any key to continue. . . ");
+		printf("Missing argument.\nUsage: ./build <runflag> <filename> <compiler flags>\nPress any key to continue. . . ");
 		getch();
 		return 0;
 	}
-	sprintf(buffer, "g++ %s.cpp -o %s", argv[2], argv[2]);
-	for (int i = 3; i < argc; i++)
-		sprintf(buffer + strlen(buffer), " %s", argv[i]);
-	#if defined(WIN32)
-		system("@set path=./MinGW/bin/;%path%");
-	#endif
-	system(buffer);
-	if (strtol(argv[1], NULL, 10) == RUN)
+	int runflag = strtol(argv[1], NULL, 10);
+	if (runflag == BUILD || runflag == BUILDRUN)
+	{
+		sprintf(buffer, "g++ %s.cpp -o %s", argv[2], argv[2]);
+		for (int i = 3; i < argc; i++)
+			sprintf(buffer + strlen(buffer), " %s", argv[i]);
+		#if defined(WIN32)
+			system("@set path=./MinGW/bin/;%path%");
+		#endif
+		system(buffer);
+	}
+	if (runflag == RUN || runflag == BUILDRUN)
 	{
 		#if defined(WIN32)
 			sprintf(buffer, "%s", argv[2]);
 		#else
 			sprintf(buffer, "./%s", argv[2]);
 		#endif
+		clock_t t0 = clock();
 		int exitcode = system(buffer);
-		printf("\nProcess terminated with return code %d.\n", exitcode);
+		clock_t t1 = clock();
+		printf("\nProcess terminated with return code %d after %f seconds.\n", exitcode, ((double) (t1 - t0) / CLOCKS_PER_SEC));
 		printf("Press any key to continue. . . ");
 		getch();
 	}

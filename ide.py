@@ -352,14 +352,14 @@ def compile_cpp(self, app, run=0):
 	for i in range(3): compileFlags.pop(0)
 	if run == 0:
 		subprocess.run(cmd)
-	elif run == 1:
+	elif run:
 		subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-def compile_run_cpp(self, app, compileFlags = []):
-	compile_cpp(self, app, 1)
+def compile_run_cpp(self, app, compileFlags=[]):
+	compile_cpp(self, app, 2)
 
 def run_cpp(self, app):
-	pass # TODO: run code w/o compiling
+	compile_cpp(self, app, 1)
 
 framework = Framework()
 ide = App("res/bg.jpg")
