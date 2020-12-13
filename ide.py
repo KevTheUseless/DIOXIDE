@@ -84,6 +84,8 @@ class Framework:
 		self.apps[self.appID].mouseUp(pos, button)
 	def mouseMotion(self, pos):
 		self.apps[self.appID].mouseMotion(pos)
+	def scroll(self, y):
+		self.apps[self.appID].scroll(y)
 
 class App:
 	def __init__(self, picName):
@@ -122,16 +124,20 @@ class App:
 	def mouseUp(self, pos, button):
 		for button in self.btnList:
 			button.mouseUp(pos, button)
+		self.txtField.mouseUp(pos, button)
 	def mouseMotion(self, pos):
 		framework.mousePos = pos
 		for btn in self.btnList:
 			btn.mouseMove(pos)
+		self.txtField.mouseMotion(pos)
 	def keyUp(self, key):
 		if self.txtFieldEnabled:
 			self.txtField.keyUp(key)
 	def keyDown(self, key):
 		if self.txtFieldEnabled:
 			self.txtField.keyDown(key)
+	def scroll(self, y):
+		self.txtField.scroll(y)
 
 class TxtField:
 	def __init__(self, x, y, w, h):
@@ -143,11 +149,13 @@ class TxtField:
 		self.caps = { '`': '~', '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S', 't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z' }
 		self.shift, self.capsLock = False, False
 		self.currentChar, self.loc, self.maxIndex = 0, 0, 0
-		self.lineNum = 0; self.maxLine = 0
+		self.lineNum = 0; self.maxLine = 0; self.startLine = 0
 		self.cLineStr = ""
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 
 		self.fileName = ''
+
+		self.selecting = False; self.selection_start, self.selection_end = (), (); self.selected = ''
 		
 		class Cursor(pygame.sprite.Sprite):
 			def __init__(self):
@@ -192,7 +200,7 @@ class TxtField:
 		lines.append(ph)
 		return lines
 	def draw(self, screen, lines, y = 0):
-		for line in lines:
+		for line in lines[self.startLine:self.startLine+16]:
 			for i, ch in enumerate(line):
 				img = self.mono.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, y))
@@ -208,17 +216,21 @@ class TxtField:
 		if lines > 39: lines = 39
 
 		self.cursor.rect.center = (self.x + (self.loc - 1) * 10 + 10,
-								   self.y + self.lineNum * 20 + 10)
+								   self.y + (self.lineNum-self.startLine) * 20 + 10)
 		screen.blit(self.cursor.image, self.cursor.rect)
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
 			self.shift = False
 		elif key == pygame.K_CAPSLOCK:
 			self.capsLock = 1 - self.capsLock
-	def changeLine(self, l):
+	def getContent(self):
 		s = ''
 		for ch, clr in self.txtBuffer:
 			s += ch
+		return s
+	def changeLine(self, l):
+		l = min(l, self.maxLine)
+		s = self.getContent()
 		self.lineNum = l
 		self.maxIndex = len(s.split('\n')[l])
 		self.loc = min(self.loc, self.maxIndex)
@@ -295,6 +307,23 @@ class TxtField:
 		x, y = pos_to_loc[pos]
 		self.changeLine(y)
 		self.loc = min(self.maxIndex, x)
+		if pos[0] >= 146 and pos[1] >= 160:
+			self.selecting = True
+			self.selection_start = (x, y)
+	def mouseUp(self, pos, button):
+		if pos[0] >= 146 and pos[1] >= 160:
+			self.selecting = False
+			self.selected = ''
+	def mouseMotion(self, pos):
+		if not self.selecting: return
+		try: x, y = pos_to_loc[pos]
+		except: return
+		self.changeLine(y)
+		self.loc = min(self.maxIndex, x)
+		self.selection_end = (self.loc, self.lineNum)
+	def scroll(self, y):
+		self.startLine += y
+		self.startLine = max(min(self.startLine, self.maxLine), 0)
 
 def getch():
 	# Code from https://blog.csdn.net/damiaomiao666/article/details/50494581
@@ -424,4 +453,6 @@ while True:
 			framework.mouseUp(event.pos, event.button)
 		elif event.type == pygame.MOUSEMOTION:
 			framework.mouseMotion(event.pos)
+		elif event.type == pygame.MOUSEWHEEL:
+			framework.scroll(event.y)
 	framework.launch()
