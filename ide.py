@@ -1,4 +1,5 @@
 import pygame, sys, wx
+from settings import pos_to_loc
 wapp = wx.App()
 frm = wx.Frame(None, -1, '')
 
@@ -114,8 +115,10 @@ class App:
 		self.txtField.x, self.txtField.y = x, y
 		self.txtField.w, self.txtField.h = w, h
 	def mouseDown(self, pos, button):
+		print(pos)
 		for btn in self.btnList:
 			btn.mouseDown(pos, button, self)
+		self.txtField.mouseDown(pos, button)
 	def mouseUp(self, pos, button):
 		for button in self.btnList:
 			button.mouseUp(pos, button)
@@ -150,7 +153,7 @@ class TxtField:
 			def __init__(self):
 				pygame.sprite.Sprite.__init__(self)
 
-				self.image = pygame.Surface((2, 16))
+				self.image = pygame.Surface((1, 16))
 				self.image.fill(pygame.Color(252, 252, 252))
 
 				self.rect = self.image.get_rect()
@@ -192,8 +195,8 @@ class TxtField:
 		for line in lines:
 			for i, ch in enumerate(line):
 				img = self.mono.render(ch[0], True, ch[1])
-				screen.blit(img, (self.x + i * 9, y))
-			y += 16
+				screen.blit(img, (self.x + i * 10, y))
+			y += 20
 
 		if self.frame % 50 <= 25: self.cursor.image.fill(pygame.Color(252, 252, 252))
 		else: self.cursor.image.fill(pygame.Color(0, 0, 0))
@@ -204,8 +207,8 @@ class TxtField:
 				lines += 1
 		if lines > 39: lines = 39
 
-		self.cursor.rect.center = (self.x + (self.loc - 1) * 9 + 12,
-								   self.y + self.lineNum * 16 + 10)
+		self.cursor.rect.center = (self.x + (self.loc - 1) * 10 + 10,
+								   self.y + self.lineNum * 20 + 10)
 		screen.blit(self.cursor.image, self.cursor.rect)
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
@@ -284,6 +287,14 @@ class TxtField:
 					self.txtBuffer.insert(self.loc + ct, (chr(key), (255, 255, 255)))
 				self.loc += 1
 				self.maxIndex += 1
+	def mouseDown(self, pos, button):
+		if pos[0] < 146:
+			self.loc = 0
+			return
+		if pos[1] < 160: return
+		x, y = pos_to_loc[pos]
+		self.changeLine(y)
+		self.loc = min(self.maxIndex, x)
 
 def new(self, app):
 	pass   # TODO: integrate new file w/ multitabing

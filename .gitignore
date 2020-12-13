@@ -1,3 +1,5 @@
 *.exe
 test_saves/
 MinGW/
+__pycache__/
+*~
