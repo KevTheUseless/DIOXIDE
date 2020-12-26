@@ -1,5 +1,9 @@
 import pygame, sys, wx, subprocess
-from settings import pos_to_loc
+
+#f = open("settings.py")
+#pos_to_loc = eval(f.read())
+pos_to_loc = {}
+
 wapp = wx.App()
 frm = wx.Frame(None, -1, '')
 
@@ -347,7 +351,7 @@ def new(self, app):
 	pass # TODO: integrate new file w/ multitabbing
 
 def open_file(self, app):
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
+	with wx.FileDialog(frm, "Open...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
 					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
@@ -383,23 +387,21 @@ def save(self, app):
 	else:
 		save_as(self, app)
 
-def compile_cpp(self, app, run=0):
+def compile_cpp(self, app):
+	compileFlags = []
 	compileFlags.insert(0, app.txtField.fileName.rstrip(".cpp"))
-	compileFlags.insert(0, str(run))
-	compileFlags.insert(0, "./build")
+	compileFlags.insert(0, "buildsys/build")
 	print(compileFlags)
 	cmd = " ".join(compileFlags)
-	for i in range(3): compileFlags.pop(0)
-	if run == 0:
-		subprocess.run(cmd)
-	elif run:
-		subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-
-def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app, 2)
 
 def run_cpp(self, app):
-	compile_cpp(self, app, 1)
+	cmd = "buildsys/run %s" % app.txtField.fileName.rstrip(".cpp")
+	print(cmd)
+	subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+def compile_run_cpp(self, app):
+	compile_cpp(self, app)
+	run_cpp(self, app)
 
 framework = Framework()
 ide = App("res/bg.jpg")
@@ -415,6 +417,7 @@ save_btn.onClick = save
 save_as_btn = Button("res/icons/save_as.jpg", "res/icons/btn_bg.jpg", 160, 10, ide.appID)
 save_as_btn.onClick = save_as
 
+cmd = ""
 compileFlags = []
 
 compile_btn = Button("res/icons/compile.jpg", "res/icons/btn_bg.jpg", 210, 10, ide.appID)
