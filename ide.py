@@ -1,6 +1,7 @@
 from helpers import *
 import pygame, sys
 
+
 class Pic:
 	def __init__(self, fileName):
 		img = pygame.image.load(fileName)
