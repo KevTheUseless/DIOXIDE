@@ -1,7 +1,5 @@
-import pygame, sys, wx, subprocess
-from settings import pos_to_loc
-wapp = wx.App()
-frm = wx.Frame(None, -1, '')
+from helpers import *
+import pygame, sys
 
 class Pic:
 	def __init__(self, fileName):
@@ -144,6 +142,7 @@ class TxtField:
 		self.x, self.y = x, y
 		self.w, self.h = w, h
 		self.txtBuffer = []
+		self.lines = []
 		self.content = []
 		# MAGIC #
 		self.caps = { '`': '~', '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S', 't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z' }
@@ -200,10 +199,10 @@ class TxtField:
 		lines.append(ph)
 		return lines
 	def draw(self, screen, lines, y = 0):
-		for line in lines[self.startLine:self.startLine+16]:
+		for line in lines[self.startLine:self.startLine+28]:
 			for i, ch in enumerate(line):
 				img = self.mono.render(ch[0], True, ch[1])
-				screen.blit(img, (self.x + i * 10, y))
+				screen.blit(img, (self.x + i * 10, y - 5))
 			y += 20
 
 		if self.frame % 50 <= 25: self.cursor.image.fill(pygame.Color(252, 252, 252))
@@ -213,10 +212,10 @@ class TxtField:
 		for elem in self.txtBuffer:
 			if elem[0] in ('\r', '\n'):
 				lines += 1
-		if lines > 39: lines = 39
+		if lines > 28: lines = 28
 
 		self.cursor.rect.center = (self.x + (self.loc - 1) * 10 + 10,
-								   self.y + (self.lineNum-self.startLine) * 20 + 10)
+								   self.y + (self.lineNum-self.startLine) * 20 + 5)
 		screen.blit(self.cursor.image, self.cursor.rect)
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
@@ -304,7 +303,7 @@ class TxtField:
 			self.loc = 0
 			return
 		if pos[1] < 160: return
-		x, y = pos_to_loc[pos]
+		x, y = calc_pos(pos)
 		self.changeLine(y)
 		self.loc = min(self.maxIndex, x)
 		if pos[0] >= 146 and pos[1] >= 160:
@@ -316,90 +315,14 @@ class TxtField:
 			self.selected = ''
 	def mouseMotion(self, pos):
 		if not self.selecting: return
-		try: x, y = pos_to_loc[pos]
+		try: x, y = calc_pos(pos)
 		except: return
 		self.changeLine(y)
 		self.loc = min(self.maxIndex, x)
 		self.selection_end = (self.loc, self.lineNum)
 	def scroll(self, y):
-		self.startLine += y
+		self.startLine += -y
 		self.startLine = max(min(self.startLine, self.maxLine), 0)
-
-def getch():
-	# Code from https://blog.csdn.net/damiaomiao666/article/details/50494581
-	# by user 小杰666, with minor modifications
-
-	import sys, termios
-
-	fd = sys.stdin.fileno()
-	old = termios.tcgetattr(fd)
-	new = termios.tcgetattr(fd)
-	# turn off echo and press-enter
-	new[3] = new[3] & ~termios.ECHO & ~termios.ICANON
-
-	try:
-		termios.tcsetattr(fd, termios.TCSADRAIN, new)
-		sys.stdin.read(1)
-	finally:
-		termios.tcsetattr(fd, termios.TCSADRAIN, old)
-
-def new(self, app):
-	pass # TODO: integrate new file w/ multitabbing
-
-def open_file(self, app):
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'r') as fr:
-			for ch in fr.read():
-				app.txtField.txtBuffer.append((ch, (255, 255, 255)))
-				if ch == '\n':
-					app.txtField.maxLine += 1
-		app.txtField.changeLine(0)
-
-def save_as(self, app):
-	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
-					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'w') as fw:
-			s = ''
-			for ch, clr in app.txtField.txtBuffer:
-				s += ch
-			fw.write(s)
-			
-def save(self, app):
-	s = ''
-	for ch, clr in app.txtField.txtBuffer:
-		s += ch
-	if app.txtField.fileName:
-		with open(app.txtField.fileName, 'w') as fw:
-			fw.write(s)
-	else:
-		save_as(self, app)
-
-def compile_cpp(self, app, run=0):
-	compileFlags.insert(0, app.txtField.fileName.rstrip(".cpp"))
-	compileFlags.insert(0, str(run))
-	compileFlags.insert(0, "./build")
-	print(compileFlags)
-	cmd = " ".join(compileFlags)
-	for i in range(3): compileFlags.pop(0)
-	if run == 0:
-		subprocess.run(cmd)
-	elif run:
-		subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-
-def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app, 2)
-
-def run_cpp(self, app):
-	compile_cpp(self, app, 1)
 
 framework = Framework()
 ide = App("res/bg.jpg")
@@ -414,8 +337,6 @@ save_btn.onClick = save
 
 save_as_btn = Button("res/icons/save_as.jpg", "res/icons/btn_bg.jpg", 160, 10, ide.appID)
 save_as_btn.onClick = save_as
-
-compileFlags = []
 
 compile_btn = Button("res/icons/compile.jpg", "res/icons/btn_bg.jpg", 210, 10, ide.appID)
 compile_btn.onClick = compile_cpp
