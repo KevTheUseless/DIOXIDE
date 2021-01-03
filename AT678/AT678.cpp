@@ -17,7 +17,7 @@ int t;
 int w, h;
 char b[MAXH][MAXW];
 
-// 0 ~ 9 ( ) + - * / ×Ö·ûµÄ¶þÖµÍ¼ÐÎÊ½
+// 0 ~ 9 ( ) + - * / ï¿½Ö·ï¿½ï¿½Ä¶ï¿½ÖµÍ¼ï¿½ï¿½Ê½
 ull nums[16][65] = {
 	{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f8000, 0x1ffe000, 0x7fff800, 0xffffc00, 0x1ffffe00, 0x3fffff00, 0x7fffff80, 0x7fe1ff80, 0xff807fc0, 0xff003fc0, 0x1ff003fe0, 0x1fe001fe0, 0x1fe001fe0, 0x1fe001fe0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x1fe001fe0, 0x1fe001fe0, 0x1fe001fe0, 0x1ff003fe0, 0xff003fc0, 0xff807fc0, 0x7fe1ff80, 0x7fffff80, 0x3fffff00, 0x1ffffe00, 0xffffc00, 0x7fff800, 0x1ffe000, 0x7f8000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, },
 	{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x78000, 0x1fc000, 0xffc000, 0x7ffc000, 0x3fffc000, 0x7fffc000, 0x7fffc000, 0x7fffc000, 0x7fffc000, 0x3f3fc000, 0x383fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x7fffffe0, 0xffffffe0, 0xffffffe0, 0xffffffe0, 0xffffffe0, 0x7fffffe0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, },
@@ -38,27 +38,27 @@ ull nums[16][65] = {
 };
 
 int x = 0, y = 0;
-int minX = INF, minY = INF;					// ¶ÔÓÚÄ³¸öÌØ¶¨Á¬Í¨¿éµÄ×îÐ¡/´ó x ×ø±êÓë×îÐ¡/´ó y ×ø±ê
+int minX = INF, minY = INF;					// ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡/ï¿½ï¿½ x ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡/ï¿½ï¿½ y ï¿½ï¿½ï¿½ï¿½
 int maxX = 0, maxY = 0;
-int blockSize = 0;							// µ±Ç°Á¬Í¨¿é´óÐ¡£¬Ð¡ÓÚ 100 µÄºöÂÔ²»¼Æ
-int minXBlocks[MAXW], minYBlocks[MAXW];		// ÉÏÊöÁ¬Í¨¿éµÄ×îÐ¡/´ó x ×ø±êÓë×îÐ¡/´ó y ×ø±ê
+int blockSize = 0;							// ï¿½ï¿½Ç°ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ð¡ï¿½ï¿½ 100 ï¿½Äºï¿½ï¿½Ô²ï¿½ï¿½ï¿½
+int minXBlocks[MAXW], minYBlocks[MAXW];		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡/ï¿½ï¿½ x ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡/ï¿½ï¿½ y ï¿½ï¿½ï¿½ï¿½
 int maxXBlocks[MAXW], maxYBlocks[MAXW];
-int xyPtr = 0;								// ×ø±êÊý×éµÄÐ´Ö¸Õë
+int xyPtr = 0;								// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´Ö¸ï¿½ï¿½
 
 int speedX[] = { 0, 1, 0, -1 };
 int speedY[] = { -1, 0, 1, 0 };
-char a[MAXH][MAXW];							// Í¼ÏñµÄ¸´ÖÆÆ·£¨Òª·âÂ·£¬²»ÄÜÓÃÔ­Í¼£©
-ull extracted[65];							// Á¬Í¨¿éÌáÈ¡½á¹û£¬×ª»»Îª¶þÖµÍ¼ÐÎÊ½
+char a[MAXH][MAXW];							// Í¼ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½Æ·ï¿½ï¿½Òªï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Í¼ï¿½ï¿½
+ull extracted[65];							// ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ÖµÍ¼ï¿½ï¿½Ê½
 
-void reduceNoise();							// ½µÔë
+void reduceNoise();							// ï¿½ï¿½ï¿½ï¿½
 
-void dfs(int x, int y);						// ¶ÔÒ»¸öÁ¬Í¨¿é½øÐÐ±éÀú
-void extract(int index);					// ÌáÈ¡µ¥¸ö×Ö·û
+void dfs(int x, int y);						// ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ð±ï¿½ï¿½ï¿½
+void extract(int index);					// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½
 
 int main()
 {
-	// ÎÄ¼þ IO£¬µ÷ÊÔÓÃ
-	freopen("test.in", "r", stdin);
+	// ï¿½Ä¼ï¿½ IOï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	freopen("test.in(", "r", stdin);
 	freopen("test.out", "w", stdout);
 
 	scanf("%d", &t);
@@ -68,7 +68,7 @@ int main()
 
 	reduceNoise();
 	memcpy(a, b, sizeof(b));
-	// ´òÓ¡½µÔë½á¹û£¬µ÷ÊÔÓÃ
+	// ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	printf("%d\n", t);
 //	printf("%d %d\n", w, h);
 //	for (rint i = 0; i < h; ++i)
@@ -100,16 +100,16 @@ int main()
 	for (rint i = 0; i < xyPtr; ++i)
 	{
 		extract(i);
-		// ´òÓ¡ÌáÈ¡½á¹û£¬µ÷ÊÔÓÃ
+		// ï¿½ï¿½Ó¡ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for (rint j = 0; j < h; ++j)
 			printf("%lld\n", extracted[j]);
-		// Ê¶±ð
+		// Ê¶ï¿½ï¿½
 		int width = maxXBlocks[i] - minXBlocks[i];
 		int height = maxYBlocks[i] - maxYBlocks[i];
 
 	}
 
-	// ´òÓ¡ DFS ½á¹û£¬µ÷ÊÔÓÃ
+	// ï¿½ï¿½Ó¡ DFS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	for (rint i = 0; i < h; ++i)
 //		printf("%s\n", a[i]);
 
@@ -120,7 +120,7 @@ int main()
 
 void reduceNoise()
 {
-	// Ñù±¾·ÖÎö
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (rint i = 0; i < h / 3; ++i)
 	{
 		for (rint j = 0; j < w / 3; ++j)
@@ -144,7 +144,7 @@ void reduceNoise()
 			}
 		}
 	}
-	// Ã¿ÐÐ·ÖÎö
+	// Ã¿ï¿½Ð·ï¿½ï¿½ï¿½
 	for (rint i = 0; i < h; ++i)
 	{
 		for (rint j = 0; j < w - 2; ++j)
@@ -153,7 +153,7 @@ void reduceNoise()
 				b[i][j] = b[i][j + 1] = b[i][j + 2] = '#';
 		}
 	}
-	// Ê£ÓàÇøÓò
+	// Ê£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	for (rint i = h; i >= h - h % 3; --i)
 	{
 		for (rint j = 0; j < w; ++j)
@@ -168,9 +168,9 @@ void reduceNoise()
 
 void dfs(int x, int y)
 {
-	// ¡°·âÂ·¡±
+	// ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½
 	a[y][x] = '.';
-	// Çó¸ÃÁ¬Í¨¿éµÄ×î´ó x£¬y ×ø±ê
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ xï¿½ï¿½y ï¿½ï¿½ï¿½ï¿½
 	if (x < minX)
 		minX = x;
 	else if (x > maxX)
