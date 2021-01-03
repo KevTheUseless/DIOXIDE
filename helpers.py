@@ -32,9 +32,9 @@ def open_file(self, app):
 		app.txtField.fileName = path
 		with open(path, 'r') as fr:
 			for ch in fr.read():
-				app.txtField.txtBuffer.append((ch, (255, 255, 255)))
 				if ch == '\n':
-					app.txtField.maxLine += 1
+					app.txtField.txtBuffer.append([])
+				else: app.txtField.txtBuffer[-1].append((ch, (255, 255, 255)))
 		app.txtField.changeLine(0)
 
 def save_as(self, app):
@@ -46,14 +46,18 @@ def save_as(self, app):
 		app.txtField.fileName = path
 		with open(path, 'w') as fw:
 			s = ''
-			for ch, clr in app.txtField.txtBuffer:
-				s += ch
+			for line in app.txtField.txtBuffer:
+				for ch, clr in line:
+					s += ch
+				s += '\n'
 			fw.write(s)
 			
 def save(self, app):
 	s = ''
-	for ch, clr in app.txtField.txtBuffer:
-		s += ch
+	for line in app.txtField.txtBuffer:
+		for ch, clr in line:
+			s += ch
+		s += '\n'
 	if app.txtField.fileName:
 		with open(app.txtField.fileName, 'w') as fw:
 			fw.write(s)
@@ -61,6 +65,8 @@ def save(self, app):
 		save_as(self, app)
 
 def compile_cpp(self, app, run=0):
+	if not app.txtField.fileName:
+		save_as(self, app)
 	compileFlags = ['./build', str(run), app.txtField.fileName.rstrip(".cpp")]
 	print(compileFlags)
 	cmd = " ".join(compileFlags)
@@ -78,6 +84,6 @@ def run_cpp(self, app):
 
 def calc_pos(pos):
 	px, py = pos
-	x = max((px - 146) // 10, 0)
-	y = max((py - 160) // 20, 0)
+	x = max((px - 145) // 10, 0)
+	y = max((py - 155) // 20, 0)
 	return x, y
