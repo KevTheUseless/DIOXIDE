@@ -1,5 +1,4 @@
 *.exe
-MinGW.zip
 test_saves/
 MinGW/
 __pycache__/
