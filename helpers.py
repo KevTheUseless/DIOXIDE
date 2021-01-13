@@ -1,4 +1,5 @@
 import wx, subprocess
+from regex import parse
 wapp = wx.App()
 frm = wx.Frame(None, -1, '')
 
@@ -24,6 +25,7 @@ def new(self, app):
 	pass  # TODO: integrate new file w/ multitabbing
 
 def open_file(self, app):
+	app.txtField.txtBuffer = [[]]
 	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
 					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -34,8 +36,9 @@ def open_file(self, app):
 			for ch in fr.read():
 				if ch == '\n':
 					app.txtField.txtBuffer.append([])
-				else: app.txtField.txtBuffer[-1].append((ch, (255, 255, 255)))
+				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
 		app.txtField.changeLine(0)
+	parse(app.txtField)
 
 def save_as(self, app):
 	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",

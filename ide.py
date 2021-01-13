@@ -1,4 +1,5 @@
 from helpers import *
+from regex import parse
 import pygame, sys
 
 
@@ -279,13 +280,13 @@ class TxtField:
 			if not tmp:
 				for ch, clr in self.txtBuffer[self.lineNum]:
 					if ch != ' ': break
-					tmp.append((ch, (226, 201, 94)))
+					tmp.append([ch, (226, 201, 94)])
 			self.txtBuffer.insert(self.lineNum + 1, tmp)
 			self.lineNum += 1
 			self.loc = len(tmp) if tmp and tmp[0][1] == (226, 201, 94) else 0
 		elif key == pygame.K_TAB:
 			for _ in range(4):
-				self.txtBuffer[self.lineNum].insert(self.loc, (' ', (0, 0, 0)))
+				self.txtBuffer[self.lineNum].insert(self.loc, [' ', (0, 0, 0)])
 			self.loc += 4;
 		elif key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
 			self.shift = True
@@ -322,13 +323,15 @@ class TxtField:
 					self.selection_start = ()
 					self.selection_end = ()
 				if (key == 39 or 44 <= key <= 57 or key == 59 or key == 61 or key == 96 or 91 <= key <= 93) and self.shift:
-					self.txtBuffer[self.lineNum].insert(self.loc, (self.caps[chr(key)], (255, 255, 255)))
+					self.txtBuffer[self.lineNum].insert(self.loc, [self.caps[chr(key)], (255, 255, 255)])
 				elif 97 <= key <= 122 and (self.shift or self.capsLock):
-					self.txtBuffer[self.lineNum].insert(self.loc, (self.caps[chr(key)], (255, 255, 255)))
+					self.txtBuffer[self.lineNum].insert(self.loc, [self.caps[chr(key)], (255, 255, 255)])
 				else:
-					self.txtBuffer[self.lineNum].insert(self.loc, (chr(key), (255, 255, 255)))
+					self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
 				self.loc += 1
+		parse(self, self.lineNum)
 	def mouseDown(self, pos, button):
+		print('msd')
 		if pos[0] < 146:
 			self.loc = 0
 			return
@@ -362,6 +365,7 @@ class TxtField:
 		else:
 			self.selection_start, self.selection_end = self.selection_fixed, self.selection_branch
 	def scroll(self, y):
+		print('scrl')
 		self.startLine += -y
 		self.startLine = max(min(self.startLine, len(self.txtBuffer)), 0)
 
@@ -409,12 +413,12 @@ while True:
 			framework.keyDown(event.key)
 		elif event.type == pygame.KEYUP:
 			framework.keyUp(event.key)
-		if event.type == pygame.MOUSEBUTTONDOWN:
+		elif event.type == pygame.MOUSEWHEEL:
+			framework.scroll(event.y)
+		elif event.type == pygame.MOUSEBUTTONDOWN:
 			framework.mouseDown(event.pos, event.button)
 		elif event.type == pygame.MOUSEBUTTONUP:
 			framework.mouseUp(event.pos, event.button)
 		elif event.type == pygame.MOUSEMOTION:
 			framework.mouseMotion(event.pos)
-		elif event.type == pygame.MOUSEWHEEL:
-			framework.scroll(event.y)
 	framework.launch()
