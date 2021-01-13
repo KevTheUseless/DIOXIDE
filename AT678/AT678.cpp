@@ -17,7 +17,7 @@ int t;
 int w, h;
 char b[MAXH][MAXW];
 
-// 0 ~ 9 ( ) + - * / 字符的二值图形式
+// added for testing purposes; the other comments have weird encoding so... yeah
 ull nums[16][65] = {
 	{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f8000, 0x1ffe000, 0x7fff800, 0xffffc00, 0x1ffffe00, 0x3fffff00, 0x7fffff80, 0x7fe1ff80, 0xff807fc0, 0xff003fc0, 0x1ff003fe0, 0x1fe001fe0, 0x1fe001fe0, 0x1fe001fe0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x3fc000ff0, 0x1fe001fe0, 0x1fe001fe0, 0x1fe001fe0, 0x1ff003fe0, 0xff003fc0, 0xff807fc0, 0x7fe1ff80, 0x7fffff80, 0x3fffff00, 0x1ffffe00, 0xffffc00, 0x7fff800, 0x1ffe000, 0x7f8000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, },
 	{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x78000, 0x1fc000, 0xffc000, 0x7ffc000, 0x3fffc000, 0x7fffc000, 0x7fffc000, 0x7fffc000, 0x7fffc000, 0x3f3fc000, 0x383fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x3fc000, 0x7fffffe0, 0xffffffe0, 0xffffffe0, 0xffffffe0, 0xffffffe0, 0x7fffffe0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, },
@@ -38,26 +38,25 @@ ull nums[16][65] = {
 };
 
 int x = 0, y = 0;
-int minX = INF, minY = INF;					// 对于某个特定连通块的最小/大 x 坐标与最小/大 y 坐标
+int minX = INF, minY = INF;
 int maxX = 0, maxY = 0;
-int blockSize = 0;							// 当前连通块大小，小于 100 的忽略不计
-int minXBlocks[MAXW], minYBlocks[MAXW];		// 上述连通块的最小/大 x 坐标与最小/大 y 坐标
+int blockSize = 0
+int minXBlocks[MAXW], minYBlocks[MAXW];
 int maxXBlocks[MAXW], maxYBlocks[MAXW];
-int xyPtr = 0;								// 坐标数组的写指针
+int xyPtr = 0;
 
 int speedX[] = { 0, 1, 0, -1 };
 int speedY[] = { -1, 0, 1, 0 };
-char a[MAXH][MAXW];							// 图像的复制品（要封路，不能用原图）
-ull extracted[65];							// 连通块提取结果，转换为二值图形式
+char a[MAXH][MAXW];
+ull extracted[65];
 
-void reduceNoise();							// 降噪
+void reduceNoise();
 
-void dfs(int x, int y);						// 对一个连通块进行遍历
-void extract(int index);					// 提取单个字符
+void dfs(int x, int y);	
+void extract(int index);
 
 int main()
 {
-	// 文件 IO，调试用
 	freopen("test.in", "r", stdin);
 	freopen("test.out", "w", stdout);
 
@@ -68,11 +67,6 @@ int main()
 
 	reduceNoise();
 	memcpy(a, b, sizeof(b));
-	// 打印降噪结果，调试用
-//	printf("%d\n", t);
-//	printf("%d %d\n", w, h);
-//	for (rint i = 0; i < h; ++i)
-//		printf("%s\n", a[i]);
 
 	for (rint j = 0; j < w; ++j)
 	{
@@ -100,18 +94,12 @@ int main()
 	for (rint i = 0; i < xyPtr; ++i)
 	{
 		extract(i);
-		// 打印提取结果，调试用
 		for (rint j = 0; j < h; ++j)
 			printf("%lld\n", extracted[j]);
-		// 识别
 		int width = maxXBlocks[i] - minXBlocks[i];
 		int height = maxYBlocks[i] - maxYBlocks[i];
 
 	}
-
-	// 打印 DFS 结果，调试用
-//	for (rint i = 0; i < h; ++i)
-//		printf("%s\n", a[i]);
 
 	fclose(stdin);
 	fclose(stdout);
@@ -120,7 +108,6 @@ int main()
 
 void reduceNoise()
 {
-	// 样本分析
 	for (rint i = 0; i < h / 3; ++i)
 	{
 		for (rint j = 0; j < w / 3; ++j)
@@ -144,7 +131,6 @@ void reduceNoise()
 			}
 		}
 	}
-	// 每行分析
 	for (rint i = 0; i < h; ++i)
 	{
 		for (rint j = 0; j < w - 2; ++j)
@@ -153,7 +139,6 @@ void reduceNoise()
 				b[i][j] = b[i][j + 1] = b[i][j + 2] = '#';
 		}
 	}
-	// 剩余区域
 	for (rint i = h; i >= h - h % 3; --i)
 	{
 		for (rint j = 0; j < w; ++j)
@@ -168,9 +153,7 @@ void reduceNoise()
 
 void dfs(int x, int y)
 {
-	// “封路”
 	a[y][x] = '.';
-	// 求该连通块的最大 x，y 坐标
 	if (x < minX)
 		minX = x;
 	else if (x > maxX)

@@ -176,33 +176,33 @@ class TxtField:
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
 			begin.center = (self.x + start_x * 10 + (end_x - start_x) * 5,
-			                self.y + start_y * 20 + 5)
+			                self.y + start_y * 20 + 5 - self.startLine * 20)
 			return [(begin_sf, begin)]
 		elif span == 1:
 			begin_sf = pygame.Surface(((self.w - start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
 			begin.center = (self.x + start_x * 10 + (self.w - start_x) * 5,
-			                self.y + start_y * 20 + 5)
+			                self.y + start_y * 20 + 5 - self.startLine * 20)
 			end_sf = pygame.Surface((end_x * 10, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5)
+			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5 - self.startLine * 20)
 			return [(begin_sf, begin), (end_sf, end)]
 		else:
 			begin_sf = pygame.Surface(((self.w - start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
 			begin.center = (self.x + start_x * 10 + (self.w - start_x) * 5,
-			                self.y + start_y * 20 + 5)
+			                self.y + start_y * 20 + 5 - self.startLine * 20)
 			end_sf = pygame.Surface((end_x * 10, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5)
+			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5 - self.startLine * 20)
 			mid_sf = pygame.Surface((self.w * 10, 20 * (span - 1)))
 			mid_sf.fill((120, 120, 120))
 			mid = mid_sf.get_rect()
-			mid.center = (700, self.y + start_y * 20 + (end_y - start_y) * 10 + 5)
+			mid.center = (700, self.y + start_y * 20 + (end_y - start_y) * 10 + 5 - self.startLine * 20)
 			return [(begin_sf, begin), (end_sf, end), (mid_sf, mid)]
 	def draw(self, screen):
 		if pygame.time.get_ticks() % 1000 <= 500: self.cursor.image.fill(pygame.Color(252, 252, 252))
@@ -334,6 +334,7 @@ class TxtField:
 			return
 		if pos[1] < 160: return
 		x, y = calc_pos(pos)
+		y += self.startLine
 		self.goto(x, y)
 		if pos[0] >= 146 and pos[1] >= 160:
 			self.selecting = True
@@ -353,6 +354,7 @@ class TxtField:
 		if not self.selecting: return
 		try: x, y = calc_pos(pos)
 		except: return
+		y += self.startLine
 		self.goto(x, y)
 		self.selection_branch = (self.loc, self.lineNum)
 		if (y < self.selection_fixed[1]) or (y == self.selection_fixed[1] and self.loc < self.selection_fixed[0]):
