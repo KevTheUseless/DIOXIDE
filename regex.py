@@ -10,14 +10,15 @@ sComments = re.finditer(r"\/\/[^\n\r]+", line)
 mComments = re.finditer(r"\/\*[^]+\*\/", line)
 """
 
+call = re.compile(r"\b\S+(?=\()")
 preproc = re.compile(r"^#\S+\b")
 keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
 datatype = re.compile(r"\b(asm|auto|bool|char|double|enum|float|int|long|class|short|signed|struct|template|typedef|union|unsigned|void|wchar_t)\b")
 numeral = re.compile(r"\b(true|false|\d+)\b")
-literal = re.compile(r"((\"|\').*(\"|\'))|<.*>")
+literal = re.compile(r"(\"|\').*(\"|\')")
 comment = re.compile(r"//.*$")               # nvm about /* */ right now
 
-ex = [(preproc, (249, 36, 93)), (keyword, (249, 36, 93)), (datatype, (103, 216, 239)), (numeral, (172, 128, 255)), (literal, (231, 219, 116)), (comment, (116, 112, 93))]
+ex = [(call, (103, 216, 239)), (preproc, (249, 36, 93)), (keyword, (249, 36, 93)), (datatype, (103, 216, 239)), (numeral, (172, 128, 255)), (literal, (231, 219, 116)), (comment, (116, 112, 93))]
 
 def parse(self, lineNum=-1):
 	if lineNum < 0:
@@ -29,5 +30,5 @@ def parse(self, lineNum=-1):
 		self.txtBuffer[lineNum][i][1] = (255, 255, 255)
 	for expr, clr in ex:
 		for match in expr.finditer(line):
-			for i in range(match.span()[0], match.span()[1]):
+			for i in range(match.start(), match.end()):
 				self.txtBuffer[lineNum][i][1] = clr

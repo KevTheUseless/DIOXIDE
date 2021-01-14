@@ -155,6 +155,8 @@ class TxtField:
 		self.selecting = False
 		self.selection_fixed, self.selection_branch = (), ()
 		self.selection_start, self.selection_end = (), ()
+
+		self.autocomplete = {'(': ')', '[': ']', '{': '}', '<': '>'}
 		
 		class Cursor(pygame.sprite.Sprite):
 			def __init__(self):
@@ -310,6 +312,18 @@ class TxtField:
 			elif self.lineNum < len(self.txtBuffer) - 1:
 				self.lineNum += 1
 				self.loc = 0
+		elif (not (self.shift or self.capsLock)) and chr(key) in self.autocomplete:
+			self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
+			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[chr(key)], (255, 255, 255)])
+			self.loc += 1
+		elif (self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete):
+			self.txtBuffer[self.lineNum].insert(self.loc, [self.caps[chr(key)], (255, 255, 255)])
+			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[self.caps[chr(key)]], (255, 255, 255)])
+			self.loc += 1
+		elif (((not (self.shift or self.capsLock)) and chr(key) in self.autocomplete.values()) \
+			or ((self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete.values()))) \
+			and self.loc != len(self.txtBuffer[self.lineNum]) and self.txtBuffer[self.lineNum][self.loc][0] == (self.caps[chr(key)] if self.shift or self.capsLock else chr(key)):
+			self.loc += 1
 		else:
 			if 32 <= key <= 126:
 				if self.selection_start and self.selection_end and self.selection_start != self.selection_end:
