@@ -289,7 +289,7 @@ class TxtField:
 		elif key == pygame.K_TAB:
 			for _ in range(4):
 				self.txtBuffer[self.lineNum].insert(self.loc, [' ', (0, 0, 0)])
-			self.loc += 4;
+			self.loc += 4
 		elif key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
 			self.shift = True
 		elif key == pygame.K_CAPSLOCK:

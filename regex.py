@@ -18,7 +18,11 @@ numeral = re.compile(r"\b(true|false|\d+)\b")
 literal = re.compile(r"(\"|\').*(\"|\')")
 comment = re.compile(r"//.*$")               # nvm about /* */ right now
 
-ex = [(call, (103, 216, 239)), (preproc, (249, 36, 93)), (keyword, (249, 36, 93)), (datatype, (103, 216, 239)), (numeral, (172, 128, 255)), (literal, (231, 219, 116)), (comment, (116, 112, 93))]
+f = open("default-skin.gskin")
+palette = eval(f.read())
+f.close()
+
+ex = [(call, palette["call"]), (preproc, palette["preproc"]), (keyword, palette["keyword"]), (datatype, palette["datatype"]), (numeral, palette["numeral"]), (literal, palette["literal"]), (comment, palette["comment"])]
 
 def parse(self, lineNum=-1):
 	if lineNum < 0:
