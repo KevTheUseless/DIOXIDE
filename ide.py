@@ -112,8 +112,7 @@ class App:
 		self.txtList.append(tt)
 	def enableTxtField(self, x, y, w, h):
 		self.txtFieldEnabled = True
-		self.txtField.x, self.txtField.y = x, y
-		self.txtField.w, self.txtField.h = w, h
+		self.txtField = TxtField(x, y, w, h)
 	def mouseDown(self, pos, button):
 		print(pos)
 		for btn in self.btnList:
@@ -150,7 +149,7 @@ class TxtField:
 		self.cLineStr = ""
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 
-		self.fileName = ''
+		self.fileName = ""
 
 		self.selecting = False
 		self.selection_fixed, self.selection_branch = (), ()
@@ -166,6 +165,13 @@ class TxtField:
 				self.rect = self.image.get_rect()
 
 		self.cursor = Cursor()
+	def getContents(self):
+		fileContents = ""
+		for line in self.txtBuffer:
+			for charPack in line:
+				fileContents += charPack[0]
+			fileContents += '\n'
+		return fileContents
 	def get_selection_rects(self):
 		if not self.selection_start or not self.selection_end: return []
 		start_x, start_y = self.selection_start
@@ -407,6 +413,18 @@ ide.enableTxtField(150, 160, 110, 40)
 while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
+			temp = ""
+			flag = 0
+			try:
+				f = open(ide.txtField.fileName)
+				temp = f.read()
+				f.close()
+			except: flag = 1
+			if ide.txtField.getContents().rstrip() != temp.rstrip(): 
+				with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not ide.txtField.fileName else ide.txtField.fileName), "GENOCIDE", style=wx.OK|wx.CANCEL) as dlg:
+					if dlg.ShowModal() == wx.ID_OK:
+						if flag: save_as(None, ide)
+						else: save(None, ide)
 			pygame.quit()
 			sys.exit()
 		if event.type == pygame.KEYDOWN:

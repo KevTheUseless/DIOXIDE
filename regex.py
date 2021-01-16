@@ -14,7 +14,7 @@ call = re.compile(r"(?=\b)[^\s]+(?=\()")
 preproc = re.compile(r"^#\S+\b")
 keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
 datatype = re.compile(r"\b(asm|auto|bool|char|double|enum|float|int|long|class|short|signed|struct|template|typedef|union|unsigned|void|wchar_t)\b")
-numeral = re.compile(r"\b(true|false|\d+)\b")
+numeral = re.compile(r"\b(true|false|0x[\da-fA-F]+)|(0o[0-7]+)|(0b[01]+)|([\d]+)\b")
 literal = re.compile(r"((\"|\').*(\"|\'))|<.*>")
 comment = re.compile(r"//.*$")               # nvm about /* */ right now
 
