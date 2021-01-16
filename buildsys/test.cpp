@@ -1,9 +1,11 @@
-#include <bits/stdc++.h>
+#include <cstdio>
 
 int main()
 {
-	char buf[1024];
-	scanf("%s", buf);
-	puts(buf);
-	return 0;
+    char buf[1024];
+    scanf("%s", buf);
+    puts(buf);
+    return 0;
 }
+
+

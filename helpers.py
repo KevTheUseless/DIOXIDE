@@ -22,7 +22,20 @@ def getch():
 		termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 def new(self, app):
-	pass  # TODO: integrate new file w/ multitabbing
+	# TODO: integrate new file w/ multitabbing
+	temp = ""
+	flag = 0
+	try:
+		f = open(app.txtField.fileName)
+		temp = f.read()
+		f.close()
+	except: flag = 1
+	if app.txtField.getContents().rstrip() != temp.rstrip(): 
+		with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not app.txtField.fileName else app.txtField.fileName), "GENOCIDE", style=wx.OK|wx.CANCEL) as dlg:
+			if dlg.ShowModal() == wx.ID_OK:
+				if flag: save_as(None, app)
+				else: save(None, app)
+	app.enableTxtField(150, 160, 110, 40)
 
 def open_file(self, app):
 	app.txtField.txtBuffer = [[]]
@@ -67,23 +80,25 @@ def save(self, app):
 	else:
 		save_as(self, app)
 
-def compile_cpp(self, app, run=0):
+def compile_cpp(self, app):
 	if not app.txtField.fileName:
 		save_as(self, app)
-	compileFlags = ['./build', str(run), app.txtField.fileName.rstrip(".cpp")]
+	compileFlags = ['buildsys/build', app.txtField.fileName.rstrip(".cpp")]
 	print(compileFlags)
 	cmd = " ".join(compileFlags)
-	for i in range(3): compileFlags.pop(0)
-	if run == 0:
-		subprocess.run(cmd)
-	elif run:
-		subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+	subprocess.run(cmd)
 
 def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app, 2)
+	compile_cpp(self, app)
+	run_cpp(self, app)
 
 def run_cpp(self, app):
-	compile_cpp(self, app, 1)
+	if not app.txtField.fileName:
+		save_as(self, app)
+	compileFlags = ['buildsys/run', app.txtField.fileName.rstrip(".cpp")]
+	print(compileFlags)
+	cmd = " ".join(compileFlags)
+	subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 def get_skin(self, app):
 	skin = ''
