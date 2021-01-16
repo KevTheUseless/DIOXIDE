@@ -20,7 +20,7 @@ class Pic:
 
 class Button:
 	def __init__(self, picFile, bg, x, y, appID, **txt):
-		self.img = pygame.image.load(picFile).convert()
+		self.img = pygame.image.load(picFile).convert_alpha()
 		self.bg = pygame.image.load(bg).convert()
 		self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
 		self.x, self.y = x, y
@@ -95,6 +95,9 @@ class App:
 		self.tooltipList = []
 		self.txtField = TxtField(0, 0, 0, 0)
 		self.txtFieldEnabled = False
+		self.cursor_in_txt = False
+		self.cursor_img = pygame.image.load("res/cursor.png").convert_alpha()
+		self.cursor_rect = self.cursor_img.get_rect()
 	def draw(self, screen):
 		if framework.appID != self.appID:
 			return
@@ -105,6 +108,10 @@ class App:
 			tooltip.draw(screen)
 		if self.txtFieldEnabled:
 			self.txtField.draw(screen)
+		pygame.mouse.set_visible(not self.cursor_in_txt)
+		if self.cursor_in_txt:
+			self.cursor_rect.center = pygame.mouse.get_pos()
+			screen.blit(self.cursor_img, self.cursor_rect)
 	def addButton(self, b):
 		self.btnList.append(b)
 	def addTooltip(self, txt, font, x, y, c, rect):
@@ -114,7 +121,6 @@ class App:
 		self.txtFieldEnabled = True
 		self.txtField = TxtField(x, y, w, h)
 	def mouseDown(self, pos, button):
-		print(pos)
 		for btn in self.btnList:
 			btn.mouseDown(pos, button, self)
 		self.txtField.mouseDown(pos, button)
@@ -127,6 +133,9 @@ class App:
 		for btn in self.btnList:
 			btn.mouseMove(pos)
 		self.txtField.mouseMotion(pos)
+		if 145 <= pos[0] and 150 <= pos[1]:
+			self.cursor_in_txt = True
+		else: self.cursor_in_txt = False
 	def keyUp(self, key):
 		if self.txtFieldEnabled:
 			self.txtField.keyUp(key)
@@ -154,6 +163,8 @@ class TxtField:
 		self.selecting = False
 		self.selection_fixed, self.selection_branch = (), ()
 		self.selection_start, self.selection_end = (), ()
+
+		self.autocomplete = {'(': ')', '[': ']', '{': '}', '<': '>'}
 		
 		class Cursor(pygame.sprite.Sprite):
 			def __init__(self):
@@ -316,6 +327,18 @@ class TxtField:
 			elif self.lineNum < len(self.txtBuffer) - 1:
 				self.lineNum += 1
 				self.loc = 0
+		elif (not (self.shift or self.capsLock)) and chr(key) in self.autocomplete:
+			self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
+			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[chr(key)], (255, 255, 255)])
+			self.loc += 1
+		elif (self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete):
+			self.txtBuffer[self.lineNum].insert(self.loc, [self.caps[chr(key)], (255, 255, 255)])
+			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[self.caps[chr(key)]], (255, 255, 255)])
+			self.loc += 1
+		elif (((not (self.shift or self.capsLock)) and chr(key) in self.autocomplete.values()) \
+			or ((self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete.values()))) \
+			and self.loc != len(self.txtBuffer[self.lineNum]) and self.txtBuffer[self.lineNum][self.loc][0] == (self.caps[chr(key)] if self.shift or self.capsLock else chr(key)):
+			self.loc += 1
 		else:
 			if 32 <= key <= 126:
 				if self.selection_start and self.selection_end and self.selection_start != self.selection_end:
@@ -337,7 +360,6 @@ class TxtField:
 				self.loc += 1
 		parse(self, self.lineNum)
 	def mouseDown(self, pos, button):
-		print('msd')
 		if pos[0] < 146:
 			self.loc = 0
 			return
@@ -371,32 +393,34 @@ class TxtField:
 		else:
 			self.selection_start, self.selection_end = self.selection_fixed, self.selection_branch
 	def scroll(self, y):
-		print('scrl')
 		self.startLine += -y
 		self.startLine = max(min(self.startLine, len(self.txtBuffer)), 0)
 
 framework = Framework()
 ide = App("res/bg.jpg")
-new_btn = Button("res/icons/new.jpg", "res/icons/btn_bg.jpg", 10, 10, ide.appID)
+new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 10, 10, ide.appID)
 new_btn.onClick = new
 
-open_btn = Button("res/icons/open.jpg", "res/icons/btn_bg.jpg", 60, 10, ide.appID)
+open_btn = Button("res/icons/open.png", "res/icons/btn_bg.bmp", 60, 10, ide.appID)
 open_btn.onClick = open_file
 
-save_btn = Button("res/icons/save.jpg", "res/icons/btn_bg.jpg", 110, 10, ide.appID)
+save_btn = Button("res/icons/save.png", "res/icons/btn_bg.bmp", 110, 10, ide.appID)
 save_btn.onClick = save
 
-save_as_btn = Button("res/icons/save_as.jpg", "res/icons/btn_bg.jpg", 160, 10, ide.appID)
+save_as_btn = Button("res/icons/save_as.png", "res/icons/btn_bg.bmp", 160, 10, ide.appID)
 save_as_btn.onClick = save_as
 
-compile_btn = Button("res/icons/compile.jpg", "res/icons/btn_bg.jpg", 210, 10, ide.appID)
+compile_btn = Button("res/icons/compile.png", "res/icons/btn_bg.bmp", 210, 10, ide.appID)
 compile_btn.onClick = compile_cpp
 
-run_btn = Button("res/icons/run.jpg", "res/icons/btn_bg.jpg", 260, 10, ide.appID)
+run_btn = Button("res/icons/run.png", "res/icons/btn_bg.bmp", 260, 10, ide.appID)
 run_btn.onClick = run_cpp
 
-compile_run_btn = Button("res/icons/compile_run.jpg", "res/icons/btn_bg.jpg", 310, 10, ide.appID)
+compile_run_btn = Button("res/icons/compile_run.png", "res/icons/btn_bg.bmp", 310, 10, ide.appID)
 compile_run_btn.onClick = compile_run_cpp
+
+skin_btn = Button("res/icons/skin.png", "res/icons/btn_bg.bmp", 360, 10, ide.appID)
+skin_btn.onClick = get_skin
 
 ide.addButton(new_btn)
 ide.addButton(open_btn)
@@ -406,6 +430,7 @@ ide.addButton(save_as_btn)
 ide.addButton(compile_btn)
 ide.addButton(run_btn)
 ide.addButton(compile_run_btn)
+ide.addButton(skin_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
 ide.enableTxtField(150, 160, 110, 40)
