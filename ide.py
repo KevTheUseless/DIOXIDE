@@ -235,7 +235,10 @@ class TxtField:
 
 		for j, line in enumerate(self.txtBuffer[self.startLine:self.startLine+28]):
 			for i, ch in enumerate(line):
-				img = self.mono.render(ch[0], True, ch[1])
+				if ch[0] == '\t':
+					img = self.mono.render(' ', True, ch[1])
+				else:
+					img = self.mono.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, j * 20 + self.y - 5))
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
