@@ -18,7 +18,7 @@ numeral = re.compile(r"\b(true|false|\d+)\b")
 literal = re.compile(r"(\"|\').*(\"|\')")
 comment = re.compile(r"//.*$")               # nvm about /* */ right now
 
-f = open("default-skin.gskin")
+f = open("current_skin.gskin")
 palette = eval(f.read())
 f.close()
 

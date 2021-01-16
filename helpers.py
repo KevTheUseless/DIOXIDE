@@ -85,6 +85,17 @@ def compile_run_cpp(self, app, compileFlags=[]):
 def run_cpp(self, app):
 	compile_cpp(self, app, 1)
 
+def get_skin(self, app):
+	skin = ''
+	with wx.FileDialog(frm, "Choose skin file", wildcard="GENOCIDE skin file (*.gskin)|*.gskin",
+					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+		if fileDialog.ShowModal() == wx.ID_CANCEL:
+			return
+		skin = open(fileDialog.GetPath())
+	with open("current_skin.gskin", 'w') as fw:
+		fw.write(skin.read())
+	skin.close()
+
 def calc_pos(pos):
 	px, py = pos
 	x = max((px - 145) // 10, 0)
