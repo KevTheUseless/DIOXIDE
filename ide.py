@@ -59,7 +59,7 @@ class Framework:
 	def __init__(self):
 		pygame.init()
 		self.screen = pygame.display.set_mode((1280, 720))
-		pygame.display.set_caption("GENOCIDE")
+		pygame.display.set_caption("DIOXIDE")
 		self.clock = pygame.time.Clock()
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 		self.speed = 5
@@ -154,7 +154,7 @@ class TxtField:
 		self.caps = { '`': '~', '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S', 't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z' }
 		self.shift, self.capsLock = False, False
 		self.currentChar, self.loc = 0, 0
-		self.lineNum = 0; self.startLine = 0
+		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
 		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 
@@ -164,7 +164,11 @@ class TxtField:
 		self.selection_fixed, self.selection_branch = (), ()
 		self.selection_start, self.selection_end = (), ()
 
-		self.autocomplete = {'(': ')', '[': ']', '{': '}', '<': '>'}
+		self.autocomplete = {'(': ')', '[': ']', '{': '}'}
+
+		f = open("current_skin.gskin")
+		self.palette = eval(f.read())
+		f.close()
 		
 		class Cursor(pygame.sprite.Sprite):
 			def __init__(self):
@@ -187,40 +191,40 @@ class TxtField:
 		if not self.selection_start or not self.selection_end: return []
 		start_x, start_y = self.selection_start
 		end_x, end_y = self.selection_end
-		#start_x, start_y, end_x, end_y = min(ax, bx), min(ay, by), max(ax, bx), max(ay, by)
 		span = end_y - start_y
 		if span == 0:
 			begin_sf = pygame.Surface(((end_x - start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + start_x * 10 + (end_x - start_x) * 5,
-			                self.y + start_y * 20 + 5 - self.startLine * 20)
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (end_x - start_x) * 5,
+			                self.y + (start_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin)]
 		elif span == 1:
-			begin_sf = pygame.Surface(((self.w - start_x) * 10, 20))
+			begin_sf = pygame.Surface(((113 - start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + start_x * 10 + (self.w - start_x) * 5,
-			                self.y + start_y * 20 + 5 - self.startLine * 20)
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x) * 5,
+			                self.y + (start_y - self.start_y) * 20 + 5)
 			end_sf = pygame.Surface((end_x * 10, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5 - self.startLine * 20)
+			end.center = (self.x + end_x * 5 - self.start_x * 10,
+						  self.y + (end_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin), (end_sf, end)]
 		else:
-			begin_sf = pygame.Surface(((self.w - start_x) * 10, 20))
+			begin_sf = pygame.Surface(((113 - start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + start_x * 10 + (self.w - start_x) * 5,
-			                self.y + start_y * 20 + 5 - self.startLine * 20)
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x) * 5,
+			                self.y + (start_y - self.start_y) * 20 + 5)
 			end_sf = pygame.Surface((end_x * 10, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5, self.y + end_y * 20 + 5 - self.startLine * 20)
-			mid_sf = pygame.Surface((self.w * 10, 20 * (span - 1)))
+			end.center = (self.x + end_x * 5 - self.start_x * 10, self.y + (end_y - self.start_y) * 20 + 5)
+			mid_sf = pygame.Surface((1130, 20 * (span - 1)))
 			mid_sf.fill((120, 120, 120))
 			mid = mid_sf.get_rect()
-			mid.center = (700, self.y + start_y * 20 + (end_y - start_y) * 10 + 5 - self.startLine * 20)
+			mid.center = (715, self.y + (start_y + end_y) * 10 + 5 - self.start_y * 20)
 			return [(begin_sf, begin), (end_sf, end), (mid_sf, mid)]
 	def draw(self, screen):
 		if pygame.time.get_ticks() % 1000 <= 500: self.cursor.image.fill(pygame.Color(252, 252, 252))
@@ -229,33 +233,46 @@ class TxtField:
 		for sf, rt in self.get_selection_rects():
 			screen.blit(sf, rt)
 
-		self.cursor.rect.center = (self.x + self.loc * 10,
-								   self.y + (self.lineNum-self.startLine) * 20 + 5)
+		self.cursor.rect.center = (self.x + (self.loc-self.start_x) * 10,
+								   self.y + (self.lineNum-self.start_y) * 20 + 5)
 		screen.blit(self.cursor.image, self.cursor.rect)
 
-		for j, line in enumerate(self.txtBuffer[self.startLine:self.startLine+28]):
-			for i, ch in enumerate(line):
+		for j, line in enumerate(self.txtBuffer[self.start_y:self.start_y+28]):
+			for i, ch in enumerate(line[self.start_x:self.start_x+112]):
 				if ch[0] == '\t':
 					img = self.mono.render(' ', True, ch[1])
 				else:
 					img = self.mono.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, j * 20 + self.y - 5))
+
+		for i in range(min(len(self.txtBuffer), 28)):
+			screen.blit(self.mono.render(str(i+1+self.start_y), True, (100, 100, 100)),
+						(self.x - len(str(i+self.start_y+1)) * 10 - 15, self.y + i * 20 - 5))
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
 			self.shift = False
 		elif key == pygame.K_CAPSLOCK:
 			self.capsLock = 1 - self.capsLock
 	def changeLine(self, l):
-		l = min(l, len(self.txtBuffer) - 1)
-		self.lineNum = l
+		self.lineNum = min(l, len(self.txtBuffer) - 1)
 		self.loc = min(self.loc, len(self.txtBuffer[self.lineNum]))
+		if self.lineNum < self.start_y:
+			self.start_y -= 1
+		elif self.lineNum > self.start_y + 27:
+			self.start_y += 1
+	def change_loc(self, nloc):
+		self.loc = min(nloc, len(self.txtBuffer[self.lineNum]))
+		if self.loc < self.start_x:
+			self.start_x -= 1
+		elif self.loc > self.start_x + 111:
+			self.start_x += 1
 	def goto(self, *pos):
 		if len(pos) == 2:
 			x, y = pos
 		else:
 			x, y = pos[0]
 		self.changeLine(y)
-		self.loc = min(len(self.txtBuffer[self.lineNum]), x)
+		self.change_loc(x)
 	def keyDown(self, key):
 		if key == pygame.K_BACKSPACE:
 			try:
@@ -320,16 +337,14 @@ class TxtField:
 				self.changeLine(self.lineNum + 1)
 		elif key == pygame.K_LEFT:
 			if self.loc != 0:
-				self.loc -= 1
+				self.change_loc(self.loc - 1)
 			elif self.lineNum != 0:
-				self.lineNum -= 1
-				self.loc = len(self.txtBuffer[self.lineNum])
+				self.goto(self.lineNum - 1, len(self.txtBuffer[self.lineNum - 1]))
 		elif key == pygame.K_RIGHT:
 			if self.loc + 1 <= len(self.txtBuffer[self.lineNum]):
-				self.loc += 1
+				self.change_loc(self.loc + 1)
 			elif self.lineNum < len(self.txtBuffer) - 1:
-				self.lineNum += 1
-				self.loc = 0
+				self.goto(self.lineNum + 1, 0)
 		elif (not (self.shift or self.capsLock)) and chr(key) in self.autocomplete:
 			self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
 			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[chr(key)], (255, 255, 255)])
@@ -361,14 +376,15 @@ class TxtField:
 				else:
 					self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
 				self.loc += 1
-		parse(self, self.lineNum)
+		parse(self, self.palette, self.lineNum)
 	def mouseDown(self, pos, button):
 		if pos[0] < 146:
 			self.loc = 0
 			return
 		if pos[1] < 160: return
 		x, y = calc_pos(pos)
-		y += self.startLine
+		x += self.start_x
+		y += self.start_y
 		self.goto(x, y)
 		if pos[0] >= 146 and pos[1] >= 160:
 			self.selecting = True
@@ -388,7 +404,8 @@ class TxtField:
 		if not self.selecting: return
 		try: x, y = calc_pos(pos)
 		except: return
-		y += self.startLine
+		x += self.start_x
+		y += self.start_y
 		self.goto(x, y)
 		self.selection_branch = (self.loc, self.lineNum)
 		if (y < self.selection_fixed[1]) or (y == self.selection_fixed[1] and self.loc < self.selection_fixed[0]):
@@ -396,8 +413,8 @@ class TxtField:
 		else:
 			self.selection_start, self.selection_end = self.selection_fixed, self.selection_branch
 	def scroll(self, y):
-		self.startLine += -y
-		self.startLine = max(min(self.startLine, len(self.txtBuffer)), 0)
+		self.start_y -= y
+		self.start_y = max(min(self.start_y, len(self.txtBuffer)), 0)
 
 framework = Framework()
 ide = App("res/bg.jpg")
