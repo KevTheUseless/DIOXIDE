@@ -31,7 +31,7 @@ def new(self, app):
 		f.close()
 	except: flag = 1
 	if app.txtField.getContents().rstrip() != temp.rstrip(): 
-		with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not app.txtField.fileName else app.txtField.fileName), "GENOCIDE", style=wx.OK|wx.CANCEL) as dlg:
+		with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not app.txtField.fileName else app.txtField.fileName), "DIOXIDE", style=wx.OK|wx.CANCEL) as dlg:
 			if dlg.ShowModal() == wx.ID_OK:
 				if flag: save_as(None, app)
 				else: save(None, app)
@@ -51,7 +51,7 @@ def open_file(self, app):
 					app.txtField.txtBuffer.append([])
 				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
 		app.txtField.changeLine(0)
-	parse(app.txtField)
+	parse(app.txtField, app.txtField.palette)
 
 def save_as(self, app):
 	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
@@ -106,10 +106,14 @@ def get_skin(self, app):
 					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 		if fileDialog.ShowModal() == wx.ID_CANCEL:
 			return
-		skin = open(fileDialog.GetPath())
+		with open(fileDialog.GetPath()) as fr:
+			skin = fr.read()
+	app.txtField.palette = eval(skin)
 	with open("current_skin.gskin", 'w') as fw:
-		fw.write(skin.read())
+		fw.write(skin)
 	skin.close()
+
+	parse(app.txtField, app.txtField.palette)
 
 def calc_pos(pos):
 	px, py = pos

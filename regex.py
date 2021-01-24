@@ -18,21 +18,19 @@ numeral = re.compile(r"\b(true|false|\d+)\b")
 literal = re.compile(r"(\"|\').*(\"|\')")
 comment = re.compile(r"//.*$")               # nvm about /* */ right now
 
-f = open("current_skin.gskin")
-palette = eval(f.read())
-f.close()
+ex = ["call", "preproc", "keyword", "datatype", "numeral", "literal", "comment"]
 
-ex = [(call, palette["call"]), (preproc, palette["preproc"]), (keyword, palette["keyword"]), (datatype, palette["datatype"]), (numeral, palette["numeral"]), (literal, palette["literal"]), (comment, palette["comment"])]
-
-def parse(self, lineNum=-1):
+def parse(self, palette, lineNum=-1):
 	if lineNum < 0:
 		for i in range(len(self.txtBuffer)):
-			parse(self, i)
+			parse(self, palette, i)
 	line = ''
 	for i, pack in enumerate(self.txtBuffer[lineNum]):
 		line += pack[0]
 		self.txtBuffer[lineNum][i][1] = (255, 255, 255)
-	for expr, clr in ex:
+	for expr_name in ex:
+		expr = eval(expr_name)
+		clr = palette[expr_name]
 		for match in expr.finditer(line):
 			for i in range(match.start(), match.end()):
 				self.txtBuffer[lineNum][i][1] = clr
