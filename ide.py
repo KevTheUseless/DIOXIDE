@@ -93,7 +93,7 @@ class App:
 		self.appID = 0
 		self.btnList = []
 		self.tooltipList = []
-		self.txtField = TxtField(0, 0, 0, 0)
+		self.txtField = TxtField(0, 0, 0, 0, self)
 		self.txtFieldEnabled = False
 		self.cursor_in_txt = False
 		self.cursor_img = pygame.image.load("res/cursor.png").convert_alpha()
@@ -119,7 +119,7 @@ class App:
 		self.txtList.append(tt)
 	def enableTxtField(self, x, y, w, h):
 		self.txtFieldEnabled = True
-		self.txtField = TxtField(x, y, w, h)
+		self.txtField = TxtField(x, y, w, h, self)
 	def mouseDown(self, pos, button):
 		for btn in self.btnList:
 			btn.mouseDown(pos, button, self)
@@ -146,13 +146,14 @@ class App:
 		self.txtField.scroll(y)
 
 class TxtField:
-	def __init__(self, x, y, w, h):
+	def __init__(self, x, y, w, h, app):
 		self.x, self.y = x, y
 		self.w, self.h = w, h
+		self.app = app
 		self.txtBuffer = [[]]
 		# MAGIC #
 		self.caps = { '`': '~', '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S', 't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z' }
-		self.shift, self.capsLock = False, False
+		self.shift, self.capsLock, self.ctrl = False, False, False
 		self.currentChar, self.loc = 0, 0
 		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
@@ -226,6 +227,32 @@ class TxtField:
 			mid = mid_sf.get_rect()
 			mid.center = (715, self.y + (start_y + end_y) * 10 + 5 - self.start_y * 20)
 			return [(begin_sf, begin), (end_sf, end), (mid_sf, mid)]
+	def get_selection_content(self):
+		res = ''
+		for i in range(self.selection_start[1], self.selection_end[1] + 1):
+			if i == self.selection_start[1]:
+				line = self.txtBuffer[i][self.selection_start[0]:self.selection_end[0]] \
+				       if self.selection_start[1] == self.selection_end[1] \
+				       else self.txtBuffer[i][self.selection_start[0]:]
+			elif i == self.selection_end[1]:
+				line = self.txtBuffer[i][:self.selection_end[0]]
+			else:
+				line = self.txtBuffer[i][:]
+			for pack in line:
+				if pack: res += pack[0]
+			if i < self.selection_end[1]:
+				res += '\n'
+		return res
+	def del_selected(self):
+		new_line = (self.txtBuffer[self.selection_start[1]][:self.selection_start[0]]
+					+ self.txtBuffer[self.selection_end[1]][self.selection_end[0]:])
+		del self.txtBuffer[self.selection_start[1]:self.selection_end[1] + 1]
+		self.txtBuffer.insert(self.selection_start[1], new_line)
+		self.goto(self.selection_start)
+		self.selection_fixed = ()
+		self.selection_branch = ()
+		self.selection_start = ()
+		self.selection_end = ()
 	def draw(self, screen):
 		if pygame.time.get_ticks() % 1000 <= 500: self.cursor.image.fill(pygame.Color(252, 252, 252))
 		else: self.cursor.image.fill(pygame.Color(0, 0, 0))
@@ -253,6 +280,8 @@ class TxtField:
 			self.shift = False
 		elif key == pygame.K_CAPSLOCK:
 			self.capsLock = 1 - self.capsLock
+		elif key in (pygame.K_LCTRL, pygame.K_RCTRL):
+			self.ctrl = False
 	def changeLine(self, l):
 		self.lineNum = min(l, len(self.txtBuffer) - 1)
 		self.loc = min(self.loc, len(self.txtBuffer[self.lineNum]))
@@ -294,6 +323,8 @@ class TxtField:
 					self.changeLine(self.lineNum - 1)
 					self.loc = len(self.txtBuffer[self.lineNum])
 			except: pass
+		elif key in (pygame.K_LCTRL, pygame.K_RCTRL):
+			self.ctrl = True
 		elif key == pygame.K_DELETE:
 			try:
 				if self.selection_start and self.selection_end and self.selection_start != self.selection_end:
@@ -345,15 +376,33 @@ class TxtField:
 				self.change_loc(self.loc + 1)
 			elif self.lineNum < len(self.txtBuffer) - 1:
 				self.goto(self.lineNum + 1, 0)
-		elif (not (self.shift or self.capsLock)) and chr(key) in self.autocomplete:
+		elif self.ctrl:
+			if key == ord('s'):
+				save(None, self.app)
+			if key == ord('c'):
+				copy(self.get_selection_content())
+			if key == ord('x'):
+				copy(self.get_selection_content())
+				self.del_selected()
+			if key == ord('v'):
+				ct = self.lineNum
+				i = self.loc
+				for ch in paste():
+					if ch == '\n':
+						parse(self, self.palette, self.lineNum)
+						ct += 1
+						i = 0
+						continue
+					self.txtBuffer[ct].insert(i, [ch, (255, 255, 255)])
+		elif (not (self.shift or self.capsLock)) and (32 <= key <= 126) and (chr(key) in self.autocomplete):
 			self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
 			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[chr(key)], (255, 255, 255)])
 			self.loc += 1
-		elif (self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete):
+		elif (self.shift or self.capsLock) and (32 <= key <= 126) and (self.caps[chr(key)] in self.autocomplete):
 			self.txtBuffer[self.lineNum].insert(self.loc, [self.caps[chr(key)], (255, 255, 255)])
 			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[self.caps[chr(key)]], (255, 255, 255)])
 			self.loc += 1
-		elif (((not (self.shift or self.capsLock)) and chr(key) in self.autocomplete.values()) \
+		elif (((not (self.shift or self.capsLock)) and (32 <= key <= 126) and chr(key) in self.autocomplete.values()) \
 			or ((self.shift or self.capsLock) and (self.caps[chr(key)] in self.autocomplete.values()))) \
 			and self.loc != len(self.txtBuffer[self.lineNum]) and self.txtBuffer[self.lineNum][self.loc][0] == (self.caps[chr(key)] if self.shift or self.capsLock else chr(key)):
 			self.loc += 1
@@ -388,10 +437,10 @@ class TxtField:
 		self.goto(x, y)
 		if pos[0] >= 146 and pos[1] >= 160:
 			self.selecting = True
-			self.selection_fixed = (self.loc, y)
-			self.selection_branch = (self.loc, y)
-			self.selection_start = (self.loc, y)
-			self.selection_end = (self.loc, y)
+			self.selection_fixed = (self.loc, self.lineNum)
+			self.selection_branch = (self.loc, self.lineNum)
+			self.selection_start = (self.loc, self.lineNum)
+			self.selection_end = (self.loc, self.lineNum)
 	def mouseUp(self, pos, button):
 		if pos[0] >= 146 and pos[1] >= 160:
 			self.selecting = False
@@ -408,7 +457,8 @@ class TxtField:
 		y += self.start_y
 		self.goto(x, y)
 		self.selection_branch = (self.loc, self.lineNum)
-		if (y < self.selection_fixed[1]) or (y == self.selection_fixed[1] and self.loc < self.selection_fixed[0]):
+		if (self.lineNum < self.selection_fixed[1]) \
+			or (self.lineNum == self.selection_fixed[1] and self.loc < self.selection_fixed[0]):
 			self.selection_start, self.selection_end = self.selection_branch, self.selection_fixed
 		else:
 			self.selection_start, self.selection_end = self.selection_fixed, self.selection_branch

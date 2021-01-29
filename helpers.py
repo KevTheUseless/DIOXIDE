@@ -88,10 +88,6 @@ def compile_cpp(self, app):
 	cmd = " ".join(compileFlags)
 	subprocess.run(cmd)
 
-def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app)
-	run_cpp(self, app)
-
 def run_cpp(self, app):
 	if not app.txtField.fileName:
 		save_as(self, app)
@@ -99,6 +95,10 @@ def run_cpp(self, app):
 	print(compileFlags)
 	cmd = " ".join(compileFlags)
 	subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+def compile_run_cpp(self, app, compileFlags=[]):
+	compile_cpp(self, app)
+	run_cpp(self, app)
 
 def get_skin(self, app):
 	skin = ''
@@ -120,3 +120,22 @@ def calc_pos(pos):
 	x = max((px - 145) // 10, 0)
 	y = max((py - 155) // 20, 0)
 	return x, y
+
+def copy(string):
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	r.clipboard_clear()
+	r.clipboard_append(string)
+	r.update()
+	r.destroy()
+
+def paste():
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	r.clipboard_clear()
+	res = r.clipboard_get()
+	r.update()
+	r.destroy()
+	return res
