@@ -122,6 +122,25 @@ def calc_pos(pos):
 	y = max((py - 155) // 20, 0)
 	return x, y
 
+def copy(string):
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	r.clipboard_clear()
+	r.clipboard_append(string)
+	r.update()
+	r.destroy()
+
+def paste():
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	r.clipboard_clear()
+	res = r.clipboard_get()
+	r.update()
+	r.destroy()
+	return res
+
 
 # FILE: regex.py
 call = re.compile(r"\b\S+(?=\()")
