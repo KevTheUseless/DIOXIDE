@@ -7,5 +7,3 @@ int main()
     puts(buf);
     return 0;
 }
-
-
