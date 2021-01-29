@@ -2,4 +2,4 @@
 
 ## Name origins:
 
-the **D**ynamic **I**ntelligent **O**lympi**X**-of-**I**nformatics-friendly I**DE**
+**DIOXIDE**: the **D**ynamic **I**ntelligent **O**lympi**X**-in-**I**nformatics-friendly I**DE**
