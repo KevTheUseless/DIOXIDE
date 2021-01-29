@@ -1,4 +1,4 @@
-import pygame, sys, wx, subprocess, re
+import pygame, sys, wx, subprocess, re, time
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -188,7 +188,10 @@ class Pic:
 
 class Button:
 	def __init__(self, picFile, bg, x, y, appID, **txt):
-		self.img = pygame.image.load(picFile).convert_alpha()
+		if picFile:
+			self.img = pygame.image.load(picFile).convert_alpha()
+		else:
+			self.img = None
 		self.bg = pygame.image.load(bg).convert()
 		self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
 		self.x, self.y = x, y
@@ -201,7 +204,8 @@ class Button:
 		screen.blit(self.bg, (self.x, self.y),
 					(self.status * self.rect.w, 0,
 					 self.rect.w, self.rect.h))
-		screen.blit(self.img, (self.x + 8, self.y + 8))
+		if self.img:
+			screen.blit(self.img, (self.x + 8, self.y + 8))
 		if self.txt:
 			screen.blit(self.txt["font"].render(self.txt["content"], True, (0,0,0)), \
 						(self.x + self.w // 2 - 4 * len(self.txt["content"]), self.y + self.h // 2 - 8))
@@ -222,6 +226,14 @@ class Button:
 			self.status = 1
 		else:
 			self.status = 0
+
+class MenuButton(Button):
+	def __init__(self, txt, font, x, y, appID, bg='res/icons/menu_btn_bg.bmp'):
+		super().__init__(None, bg, x, y, appID, font=font, content=txt)
+
+class DropdownButton(Button):
+	def __init__(self, txt, font, x, y, appID, bg='res/icons/dropdown_btn_bg.bmp'):
+		super().__init__(None, bg, x, y, appID, font=font, content=txt)
 
 class Framework:
 	def __init__(self):
@@ -360,6 +372,14 @@ class TxtField:
 		if not self.selection_start or not self.selection_end: return []
 		start_x, start_y = self.selection_start
 		end_x, end_y = self.selection_end
+		if start_y < self.start_y:
+			start_y = self.start_y
+			start_x = self.start_x
+		if end_y > self.start_y + 28:
+			end_y = self.start_y + 28
+			end_x = self.start_x + 112
+		start_x = max(start_x, self.start_x)
+		end_x = max(min(end_x, self.start_x + 112), self.start_x)
 		span = end_y - start_y
 		if span == 0:
 			begin_sf = pygame.Surface(((end_x - start_x) * 10, 20))
@@ -369,28 +389,29 @@ class TxtField:
 			                self.y + (start_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin)]
 		elif span == 1:
-			begin_sf = pygame.Surface(((113 - start_x) * 10, 20))
+			begin_sf = pygame.Surface(((113 - start_x + self.start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x) * 5,
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x + self.start_x) * 5,
 			                self.y + (start_y - self.start_y) * 20 + 5)
-			end_sf = pygame.Surface((end_x * 10, 20))
+			end_sf = pygame.Surface(((end_x - self.start_x) * 10 + 5, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5 - self.start_x * 10,
+			end.center = (self.x + (end_x - self.start_x - 0.5) * 5,
 						  self.y + (end_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin), (end_sf, end)]
 		else:
-			begin_sf = pygame.Surface(((113 - start_x) * 10, 20))
+			begin_sf = pygame.Surface(((113 - start_x + self.start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x) * 5,
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x + self.start_x) * 5,
 			                self.y + (start_y - self.start_y) * 20 + 5)
-			end_sf = pygame.Surface((end_x * 10, 20))
+			end_sf = pygame.Surface(((end_x - self.start_x) * 10 + 5, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
-			end.center = (self.x + end_x * 5 - self.start_x * 10, self.y + (end_y - self.start_y) * 20 + 5)
-			mid_sf = pygame.Surface((1130, 20 * (span - 1)))
+			end.center = (self.x + (end_x - self.start_x - 0.5) * 5,
+						  self.y + (end_y - self.start_y) * 20 + 5)
+			mid_sf = pygame.Surface((1140, 20 * (span - 1)))
 			mid_sf.fill((120, 120, 120))
 			mid = mid_sf.get_rect()
 			mid.center = (715, self.y + (start_y + end_y) * 10 + 5 - self.start_y * 20)
@@ -459,10 +480,12 @@ class TxtField:
 			self.start_y += 1
 	def change_loc(self, nloc):
 		self.loc = min(nloc, len(self.txtBuffer[self.lineNum]))
-		if self.loc < self.start_x:
+		while self.loc < self.start_x:
 			self.start_x -= 1
-		elif self.loc > self.start_x + 111:
+			time.sleep(.1)
+		while self.loc > self.start_x + 111:
 			self.start_x += 1
+			time.sleep(.1)
 	def goto(self, *pos):
 		if len(pos) == 2:
 			x, y = pos
