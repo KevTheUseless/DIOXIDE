@@ -196,7 +196,7 @@ class Button:
 		self.status = 0
 		self.appID = appID
 		self.txt = txt
-
+		self.onClick = None
 	def draw(self, screen):
 		screen.blit(self.bg, (self.x, self.y),
 					(self.status * self.rect.w, 0,
@@ -205,8 +205,6 @@ class Button:
 		if self.txt:
 			screen.blit(self.txt["font"].render(self.txt["content"], True, (0,0,0)), \
 						(self.x + self.w // 2 - 4 * len(self.txt["content"]), self.y + self.h // 2 - 8))
-	def onClick(self, app):
-		pass
 	def mouseDown(self, pos, button, app):
 		if self.rect.collidepoint(pos):
 			self.status = 2
@@ -635,6 +633,20 @@ class TxtField:
 	def scroll(self, y):
 		self.start_y -= y
 		self.start_y = max(min(self.start_y, len(self.txtBuffer)), 0)
+
+class MenuBar:
+	def __init__(self):
+		self.img = pygame.image.load("res/btn_bg.bmp").convert()
+		self.btnList = {}
+	def addMenu(self, caption):
+		self.btnList[caption] = {}
+	def addMenuItem(self, parent, caption, func):
+		self.btnList[parent][caption] = func
+	def draw(self, screen):
+		cnt = 0
+		for i in self.btnList.items():
+			screen.blit(self.img, (cnt * 15, 0))
+			cnt += 1
 
 framework = Framework()
 ide = App("res/bg.jpg")
