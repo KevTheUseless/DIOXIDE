@@ -75,6 +75,7 @@ def save(self, app):
 		for ch, clr in line:
 			s += ch
 		s += '\n'
+	s = s[:-1]
 	if app.txtField.fileName:
 		with open(app.txtField.fileName, 'w') as fw:
 			fw.write(s)
@@ -135,8 +136,8 @@ def paste():
 	from tkinter import Tk
 	r = Tk()
 	r.withdraw()
-	r.clipboard_clear()
 	res = r.clipboard_get()
+	print(res)
 	r.update()
 	r.destroy()
 	return res
@@ -561,6 +562,8 @@ class TxtField:
 						i = 0
 						continue
 					self.txtBuffer[ct].insert(i, [ch, (255, 255, 255)])
+					i += 1
+				self.goto(i, ct)
 		elif (not (self.shift or self.capsLock)) and (32 <= key <= 126) and (chr(key) in self.autocomplete):
 			self.txtBuffer[self.lineNum].insert(self.loc, [chr(key), (255, 255, 255)])
 			self.txtBuffer[self.lineNum].insert(self.loc + 1, [self.autocomplete[chr(key)], (255, 255, 255)])
