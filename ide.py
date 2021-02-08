@@ -1,4 +1,5 @@
-import pygame, sys, wx, subprocess, re, time
+import pygame, sys, wx, subprocess, re, time, os
+from io import StringIO
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -89,6 +90,7 @@ def compile_cpp(self, app):
 	print(compileFlags)
 	cmd = " ".join(compileFlags)
 	subprocess.run(cmd)
+	cStats.onCompile()
 
 def compile_run_cpp(self, app, compileFlags=[]):
 	compile_cpp(self, app)
@@ -247,6 +249,7 @@ class Framework:
 	def launch(self):
 		for app in self.apps:
 			app.draw(self.screen)
+		cStats.draw(self.screen)
 		pygame.display.update()
 		self.clock.tick(50)
 	def addApp(self, app):
@@ -657,19 +660,31 @@ class TxtField:
 		self.start_y -= y
 		self.start_y = max(min(self.start_y, len(self.txtBuffer)), 0)
 
-class MenuBar:
+class CompileStats:
 	def __init__(self):
-		self.img = pygame.image.load("res/btn_bg.bmp").convert()
-		self.btnList = {}
-	def addMenu(self, caption):
-		self.btnList[caption] = {}
-	def addMenuItem(self, parent, caption, func):
-		self.btnList[parent][caption] = func
+		self.x, self.y = 0, 440
+		self.w, self.h = 340, 270
+		self.msg = ""
+	def onCompile(self):
+		compilerVer = StringIO()
+		cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpversion"
+		sys.stdin = compilerVer
+		subprocess.run(cmd)
+
+		compilerBuild = StringIO()
+		cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpmachine"
+		sys.stdin = compilerBuild
+		subprocess.run(cmd)
+
+		compilerName = "MinGW " if "mingw" in compilerBuild.getvalue() else "" + "GCC" + compilerVer.getvalue()
+		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n\nCompilation results...\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % (ide.txtField.fileName, compilerName, ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
 	def draw(self, screen):
-		cnt = 0
-		for i in self.btnList.items():
-			screen.blit(self.img, (cnt * 15, 0))
-			cnt += 1
+		compileFnt = pygame.font.Font("res/cour.ttf", 18)
+		y = 0
+		for line in self.msg.split("\n"):
+			img = compileFnt.render(line, True, (255, 255, 255))
+			screen.blit(img, (self.x, self.y + y))
+			y += 20
 
 framework = Framework()
 ide = App("res/bg.jpg")
@@ -708,7 +723,8 @@ ide.addButton(compile_run_btn)
 ide.addButton(skin_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
-ide.enableTxtField(150, 160, 110, 40)
+ide.enableTxtField(340, 190, 93, 27)
+cStats = CompileStats()
 
 while True:
 	for event in pygame.event.get():
@@ -721,7 +737,7 @@ while True:
 				f.close()
 			except: flag = 1
 			if ide.txtField.getContents().rstrip() != temp.rstrip(): 
-				with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not ide.txtField.fileName else ide.txtField.fileName), "GENOCIDE", style=wx.OK|wx.CANCEL) as dlg:
+				with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not ide.txtField.fileName else ide.txtField.fileName), "DIOXIDE", style=wx.OK|wx.CANCEL) as dlg:
 					if dlg.ShowModal() == wx.ID_OK:
 						if flag: save_as(None, ide)
 						else: save(None, ide)
