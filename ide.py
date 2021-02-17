@@ -117,10 +117,10 @@ def get_skin(self, app):
 
 	parse(app.txtField, app.txtField.palette)
 
-def calc_pos(pos):
+def calc_pos(pos, x, y):
 	px, py = pos
-	x = max((px - 145) // 10, 0)
-	y = max((py - 155) // 20, 0)
+	x = max((px - x) // 10, 0)
+	y = max((py - y) // 20, 0)
 	return x, y
 
 def copy(string):
@@ -137,7 +137,6 @@ def paste():
 	r = Tk()
 	r.withdraw()
 	res = r.clipboard_get()
-	print(res)
 	r.update()
 	r.destroy()
 	return res
@@ -375,11 +374,11 @@ class TxtField:
 		if start_y < self.start_y:
 			start_y = self.start_y
 			start_x = self.start_x
-		if end_y > self.start_y + 28:
-			end_y = self.start_y + 28
-			end_x = self.start_x + 112
+		if end_y > self.start_y + self.h:
+			end_y = self.start_y + self.h
+			end_x = self.start_x + self.w
 		start_x = max(start_x, self.start_x)
-		end_x = max(min(end_x, self.start_x + 112), self.start_x)
+		end_x = max(min(end_x, self.start_x + self.w), self.start_x)
 		span = end_y - start_y
 		if span == 0:
 			begin_sf = pygame.Surface(((end_x - start_x) * 10, 20))
@@ -389,10 +388,10 @@ class TxtField:
 			                self.y + (start_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin)]
 		elif span == 1:
-			begin_sf = pygame.Surface(((113 - start_x + self.start_x) * 10, 20))
+			begin_sf = pygame.Surface(((self.w + 1 - start_x + self.start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x + self.start_x) * 5,
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (self.w + 1 - start_x + self.start_x) * 5,
 			                self.y + (start_y - self.start_y) * 20 + 5)
 			end_sf = pygame.Surface(((end_x - self.start_x) * 10 + 5, 20))
 			end_sf.fill((120, 120, 120))
@@ -401,20 +400,20 @@ class TxtField:
 						  self.y + (end_y - self.start_y) * 20 + 5)
 			return [(begin_sf, begin), (end_sf, end)]
 		else:
-			begin_sf = pygame.Surface(((113 - start_x + self.start_x) * 10, 20))
+			begin_sf = pygame.Surface(((self.w + 1 - start_x + self.start_x) * 10, 20))
 			begin_sf.fill((120, 120, 120))
 			begin = begin_sf.get_rect()
-			begin.center = (self.x + (start_x - self.start_x) * 10 + (113 - start_x + self.start_x) * 5,
+			begin.center = (self.x + (start_x - self.start_x) * 10 + (self.w + 1 - start_x + self.start_x) * 5,
 			                self.y + (start_y - self.start_y) * 20 + 5)
 			end_sf = pygame.Surface(((end_x - self.start_x) * 10 + 5, 20))
 			end_sf.fill((120, 120, 120))
 			end = end_sf.get_rect()
 			end.center = (self.x + (end_x - self.start_x - 0.5) * 5,
 						  self.y + (end_y - self.start_y) * 20 + 5)
-			mid_sf = pygame.Surface((1140, 20 * (span - 1)))
+			mid_sf = pygame.Surface((1290 - self.x, 20 * (span - 1)))
 			mid_sf.fill((120, 120, 120))
 			mid = mid_sf.get_rect()
-			mid.center = (715, self.y + (start_y + end_y) * 10 + 5 - self.start_y * 20)
+			mid.center = (1275 - self.w * 5, self.y + (start_y + end_y) * 10 + 5 - self.start_y * 20)
 			return [(begin_sf, begin), (end_sf, end), (mid_sf, mid)]
 	def get_selection_content(self):
 		res = ''
@@ -453,15 +452,15 @@ class TxtField:
 								   self.y + (self.lineNum-self.start_y) * 20 + 5)
 		screen.blit(self.cursor.image, self.cursor.rect)
 
-		for j, line in enumerate(self.txtBuffer[self.start_y:self.start_y+28]):
-			for i, ch in enumerate(line[self.start_x:self.start_x+112]):
+		for j, line in enumerate(self.txtBuffer[self.start_y:self.start_y + self.h]):
+			for i, ch in enumerate(line[self.start_x:self.start_x + self.w]):
 				if ch[0] == '\t':
 					img = self.mono.render(' ', True, ch[1])
 				else:
 					img = self.mono.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, j * 20 + self.y - 5))
 
-		for i in range(min(len(self.txtBuffer), 28)):
+		for i in range(min(len(self.txtBuffer), self.h)):
 			screen.blit(self.mono.render(str(i+1+self.start_y), True, (100, 100, 100)),
 						(self.x - len(str(i+self.start_y+1)) * 10 - 15, self.y + i * 20 - 5))
 	def keyUp(self, key):
@@ -476,14 +475,14 @@ class TxtField:
 		self.loc = min(self.loc, len(self.txtBuffer[self.lineNum]))
 		if self.lineNum < self.start_y:
 			self.start_y -= 1
-		elif self.lineNum > self.start_y + 27:
+		elif self.lineNum >= self.start_y + self.h:
 			self.start_y += 1
 	def change_loc(self, nloc):
 		self.loc = min(nloc, len(self.txtBuffer[self.lineNum]))
 		while self.loc < self.start_x:
 			self.start_x -= 1
 			time.sleep(.1)
-		while self.loc > self.start_x + 111:
+		while self.loc >= self.start_x + self.w:
 			self.start_x += 1
 			time.sleep(.1)
 	def goto(self, *pos):
@@ -620,22 +619,22 @@ class TxtField:
 				self.loc += 1
 		parse(self, self.palette, self.lineNum)
 	def mouseDown(self, pos, button):
-		if pos[0] < 146:
+		if pos[0] < self.x - 5:
 			self.loc = 0
 			return
-		if pos[1] < 160: return
-		x, y = calc_pos(pos)
+		if pos[1] < self.y - 1: return
+		x, y = calc_pos(pos, self.x, self.y)
 		x += self.start_x
 		y += self.start_y
 		self.goto(x, y)
-		if pos[0] >= 146 and pos[1] >= 160:
+		if pos[0] >= self.x - 5 and pos[1] >= self.y - 1:
 			self.selecting = True
 			self.selection_fixed = (self.loc, self.lineNum)
 			self.selection_branch = (self.loc, self.lineNum)
 			self.selection_start = (self.loc, self.lineNum)
 			self.selection_end = (self.loc, self.lineNum)
 	def mouseUp(self, pos, button):
-		if pos[0] >= 146 and pos[1] >= 160:
+		if pos[0] >= self.x - 5 and pos[1] >= self.y - 1:
 			self.selecting = False
 			if self.selection_fixed == self.selection_branch:
 				self.selection_fixed = ()
@@ -644,7 +643,7 @@ class TxtField:
 				self.selection_end = ()
 	def mouseMotion(self, pos):
 		if not self.selecting: return
-		try: x, y = calc_pos(pos)
+		try: x, y = calc_pos(pos, self.x, self.y)
 		except: return
 		x += self.start_x
 		y += self.start_y
@@ -661,28 +660,28 @@ class TxtField:
 
 framework = Framework()
 ide = App("res/bg.jpg")
-new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 10, 10, ide.appID)
+new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 320, 45, ide.appID)
 new_btn.onClick = new
 
-open_btn = Button("res/icons/open.png", "res/icons/btn_bg.bmp", 60, 10, ide.appID)
+open_btn = Button("res/icons/open.png", "res/icons/btn_bg.bmp", 370, 45, ide.appID)
 open_btn.onClick = open_file
 
-save_btn = Button("res/icons/save.png", "res/icons/btn_bg.bmp", 110, 10, ide.appID)
+save_btn = Button("res/icons/save.png", "res/icons/btn_bg.bmp", 420, 45, ide.appID)
 save_btn.onClick = save
 
-save_as_btn = Button("res/icons/save_as.png", "res/icons/btn_bg.bmp", 160, 10, ide.appID)
+save_as_btn = Button("res/icons/save_as.png", "res/icons/btn_bg.bmp", 470, 45, ide.appID)
 save_as_btn.onClick = save_as
 
-compile_btn = Button("res/icons/compile.png", "res/icons/btn_bg.bmp", 210, 10, ide.appID)
+compile_btn = Button("res/icons/compile.png", "res/icons/btn_bg.bmp", 520, 45, ide.appID)
 compile_btn.onClick = compile_cpp
 
-run_btn = Button("res/icons/run.png", "res/icons/btn_bg.bmp", 260, 10, ide.appID)
+run_btn = Button("res/icons/run.png", "res/icons/btn_bg.bmp", 570, 45, ide.appID)
 run_btn.onClick = run_cpp
 
-compile_run_btn = Button("res/icons/compile_run.png", "res/icons/btn_bg.bmp", 310, 10, ide.appID)
+compile_run_btn = Button("res/icons/compile_run.png", "res/icons/btn_bg.bmp", 620, 45, ide.appID)
 compile_run_btn.onClick = compile_run_cpp
 
-skin_btn = Button("res/icons/skin.png", "res/icons/btn_bg.bmp", 360, 10, ide.appID)
+skin_btn = Button("res/icons/skin.png", "res/icons/btn_bg.bmp", 670, 45, ide.appID)
 skin_btn.onClick = get_skin
 
 ide.addButton(new_btn)
@@ -696,7 +695,7 @@ ide.addButton(compile_run_btn)
 ide.addButton(skin_btn)
 framework.appID = ide.appID
 framework.addApp(ide)
-ide.enableTxtField(150, 160, 110, 40)
+ide.enableTxtField(340, 160, 93, 27)
 
 while True:
 	for event in pygame.event.get():
