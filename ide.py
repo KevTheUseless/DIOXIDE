@@ -1,5 +1,4 @@
 import pygame, sys, wx, subprocess, re, time, os
-from io import StringIO
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -86,11 +85,8 @@ def save(self, app):
 def compile_cpp(self, app):
     if not app.txtField.fileName:
         save_as(self, app)
-    compileFlags = ['buildsys/build', app.txtField.fileName.rstrip(".cpp")]
-    print(compileFlags)
-    cmd = " ".join(compileFlags)
-    subprocess.run(cmd)
-    cStats.onCompile()
+    else: save(self, app)
+    cStats.onCompile(app.txtField.fileName)
 
 def compile_run_cpp(self, app, compileFlags=[]):
     compile_cpp(self, app)
@@ -661,34 +657,45 @@ class TxtField:
 
 class CompileStats:
     def __init__(self):
-        self.x, self.y = 0, 440
-        self.w, self.h = 390, 270
-        self.msg = ""
-    def onCompile(self):
-        compilerVer = StringIO()
-        cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpversion"
-        sys.stdin = compilerVer
-        subprocess.run(cmd)
+        self.x, self.y = 5, 440
+        self.w, self.h = 31, 10           # in characters
+        self.msg, self.tmp_msg = "", ""
+        self.wait = 0
+    def onCompile(self, filename):
+        cmd = ("MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+        compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        compilerBuild = StringIO()
-        cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpmachine"
-        sys.stdin = compilerBuild
-        subprocess.run(cmd)
+        cmd = ("MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+        compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        compilerName = "MinGW " if "mingw" in compilerBuild.getvalue() else "" + "GCC" + compilerVer.getvalue()
-        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n\nCompilation results...\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % (ide.txtField.fileName, compilerName, ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+        compilerName = "MinGW " if "mingw" in compilerBuild else "" + "GCC" + compilerVer
+        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n\nCompilation results......" % (ide.txtField.fileName, compilerName)
+        
+        compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
+        cmd = " ".join(compileFlags)
+        self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
+        if not self.tmp_msg:
+            self.tmp_msg = "- Output Filename: %s\n- Output Size: %f KiB" % \
+                (ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
+                os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+        self.wait = 1
+
     def draw(self, screen):
+        if self.wait: self.wait += 1
+        if self.wait == 50:
+            self.wait = 0
+            self.msg = self.tmp_msg
         compileFnt = pygame.font.Font("res/cour.ttf", 18)
-        line_offset = 0
-        for i, line in enumerate(self.msg.split("\n")):
-            for j, ch in enumerate(line):
-                img = compileFnt.render(ch, True, (255, 255, 255))
-                char_x = self.x + i * 10
-                char_y = self.y + j * 20
-                if char_x // self.w:
-                    line_offset += char_x // self.w
-                    char_x %= self.w
-                screen.blit(img, (char_x, char_y + line_offset))
+        y = 0
+        for line in self.msg.split("\n"):
+            for i in range(0, len(line), self.w):
+                for j, ch in enumerate(line[i : i + self.w]):
+                    try:
+                        img = compileFnt.render(ch, True, (255, 255, 255))
+                        screen.blit(img, (j * 10 + self.x, y + self.y))
+                    except pygame.error:
+                        pass
+                y += 20
 
 framework = Framework()
 ide = App("res/bg.jpg")
