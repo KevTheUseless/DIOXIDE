@@ -1,8 +1,5 @@
 import pygame, sys, wx, subprocess, re, time, os
-<<<<<<< HEAD
 from io import TextIOWrapper
-=======
->>>>>>> ad584af7a0aa948f398c2f8d5b59a5f2d8fb1e71
 
 # FILE: helpers.py
 wapp = wx.App()
