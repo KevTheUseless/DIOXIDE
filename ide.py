@@ -1,5 +1,5 @@
 import pygame, sys, wx, subprocess, re, time, os
-from io import StringIO
+from io import TextIOWrapper
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -666,18 +666,17 @@ class CompileStats:
 		self.w, self.h = 340, 270
 		self.msg = ""
 	def onCompile(self):
-		compilerVer = StringIO()
-		cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpversion"
-		sys.stdin = compilerVer
-		subprocess.run(cmd)
+		compilerVer = TextIOWrapper(sys.stdin)
+		cmd = ("MinGW\\bin\\gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+		subprocess.run(cmd, capture_output=True)
 
-		compilerBuild = StringIO()
-		cmd = "MinGW/bin/gcc" if os.name == "nt" else "gcc" + "-dumpmachine"
-		sys.stdin = compilerBuild
-		subprocess.run(cmd)
+		compilerBuild = TextIOWrapper(sys.stdin)
+		cmd = ("MinGW\\bin\\gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+		subprocess.run(cmd, capture_output=True)
 
-		compilerName = "MinGW " if "mingw" in compilerBuild.getvalue() else "" + "GCC" + compilerVer.getvalue()
+		compilerName = "MinGW " if "mingw" in compilerBuild.read() else "" + "GCC" + compilerVer.read()
 		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n\nCompilation results...\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % (ide.txtField.fileName, compilerName, ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+		print(self.msg)
 	def draw(self, screen):
 		compileFnt = pygame.font.Font("res/cour.ttf", 18)
 		y = 0
