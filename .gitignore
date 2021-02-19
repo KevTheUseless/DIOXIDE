@@ -1,6 +1,5 @@
 *.exe
 test_saves/
-MinGW/
-python-3.8/
+compilers/
 __pycache__/
 *~
