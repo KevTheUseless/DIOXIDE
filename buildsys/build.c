@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 	for (int i = 2; i < argc; i++)
 		sprintf(buffer + strlen(buffer), " %s", argv[i]);
 	#if defined(WIN32)
-		system("@set path=./MinGW/bin/;%path%");
+		system("@set path=./compilers/MinGW/bin/;%path%");
 	#endif
 	system(buffer);
 	return 0;

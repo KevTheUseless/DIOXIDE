@@ -69,7 +69,7 @@ def save_as(self, app):
                     s += ch
                 s += '\n'
             fw.write(s)
-            
+
 def save(self, app):
     s = ''
     for line in app.txtField.txtBuffer:
@@ -659,24 +659,24 @@ class TxtField:
 class CompileStats:
     def __init__(self):
         self.x, self.y = 5, 440
-        self.w, self.h = 31, 10           # in characters
+        self.w, self.h = 35, 20           # in characters
         self.msg, self.tmp_msg = "", ""
         self.wait = 0
     def onCompile(self, filename):
-        cmd = ("MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
         compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        cmd = ("MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
         compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        compilerName = "MinGW " if "mingw" in compilerBuild else "" + "GCC" + compilerVer
-        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n\nCompilation results......" % (ide.txtField.fileName, compilerName)
+        compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
+        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
         
         compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
         cmd = " ".join(compileFlags)
         self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
         if not self.tmp_msg:
-            self.tmp_msg = "- Output Filename: %s\n- Output Size: %f KiB" % \
+            self.tmp_msg = self.msg + "\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % \
                 (ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
                 os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
         self.wait = 1
@@ -686,14 +686,14 @@ class CompileStats:
         if self.wait == 50:
             self.wait = 0
             self.msg = self.tmp_msg
-        compileFnt = pygame.font.Font("res/cour.ttf", 18)
+        compileFnt = pygame.font.Font("res/cour.ttf", 16)
         y = 0
         for line in self.msg.split("\n"):
             for i in range(0, len(line), self.w):
                 for j, ch in enumerate(line[i : i + self.w]):
                     try:
                         img = compileFnt.render(ch, True, (255, 255, 255))
-                        screen.blit(img, (j * 10 + self.x, y + self.y))
+                        screen.blit(img, (j * 8 + self.x, y + self.y))
                     except pygame.error:
                         pass
                 y += 20
