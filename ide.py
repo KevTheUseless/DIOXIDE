@@ -1,5 +1,7 @@
 import pygame, sys, wx, subprocess, re, time, os
 from io import TextIOWrapper
+from button import Button
+from menu import Menu
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -184,53 +186,6 @@ class Pic:
             for x in range(-n, n + 1):
                 pixelGrid[y + n][x + n] = self.img.get_at((x + x0, y + y0))
 
-class Button:
-    def __init__(self, picFile, bg, x, y, appID, **txt):
-        if picFile:
-            self.img = pygame.image.load(picFile).convert_alpha()
-        else:
-            self.img = None
-        self.bg = pygame.image.load(bg).convert()
-        self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
-        self.x, self.y = x, y
-        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
-        self.status = 0
-        self.appID = appID
-        self.txt = txt
-        self.onClick = None
-    def draw(self, screen):
-        screen.blit(self.bg, (self.x, self.y),
-                    (self.status * self.rect.w, 0,
-                     self.rect.w, self.rect.h))
-        if self.img:
-            screen.blit(self.img, (self.x + 8, self.y + 8))
-        if self.txt:
-            screen.blit(self.txt["font"].render(self.txt["content"], True, (0,0,0)), \
-                        (self.x + self.w // 2 - 4 * len(self.txt["content"]), self.y + self.h // 2 - 8))
-    def mouseDown(self, pos, button, app):
-        if self.rect.collidepoint(pos):
-            self.status = 2
-            self.onClick(self, app)
-    def mouseUp(self, pos, button):
-        self.status = 0
-        if not self.rect.collidepoint(pos):
-            return
-        framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
-        framework.appID = self.appID
-    def mouseMove(self, pos):
-        if self.rect.collidepoint(pos):
-            self.status = 1
-        else:
-            self.status = 0
-
-class MenuButton(Button):
-    def __init__(self, txt, font, x, y, appID, bg='res/icons/menu_btn_bg.bmp'):
-        super().__init__(None, bg, x, y, appID, font=font, content=txt)
-
-class DropdownButton(Button):
-    def __init__(self, txt, font, x, y, appID, bg='res/icons/dropdown_btn_bg.bmp'):
-        super().__init__(None, bg, x, y, appID, font=font, content=txt)
-
 class Framework:
     def __init__(self):
         pygame.init()
@@ -270,6 +225,7 @@ class App:
         self.appID = 0
         self.btnList = []
         self.tooltipList = []
+        self.menus = []
         self.txtField = TxtField(0, 0, 0, 0, self)
         self.txtFieldEnabled = False
         self.cursor_in_txt = False
@@ -283,6 +239,8 @@ class App:
             button.draw(screen)
         for tooltip in self.tooltipList:
             tooltip.draw(screen)
+        for menu in self.menus:
+            menu.draw(screen)
         if self.txtFieldEnabled:
             self.txtField.draw(screen)
         pygame.mouse.set_visible(not self.cursor_in_txt)
@@ -294,12 +252,16 @@ class App:
     def addTooltip(self, txt, font, x, y, c, rect):
         tt = Tooltip(txt, font, x, y, c, rect)
         self.txtList.append(tt)
+    def add_menu(self, menu):
+        self.menus.append(menu)
     def enableTxtField(self, x, y, w, h):
         self.txtFieldEnabled = True
         self.txtField = TxtField(x, y, w, h, self)
     def mouseDown(self, pos, button):
         for btn in self.btnList:
             btn.mouseDown(pos, button, self)
+        for menu in self.menus:
+            menu.mouse_down(pos, button, self)
         self.txtField.mouseDown(pos, button)
     def mouseUp(self, pos, button):
         for button in self.btnList:
@@ -309,6 +271,8 @@ class App:
         framework.mousePos = pos
         for btn in self.btnList:
             btn.mouseMove(pos)
+        for menu in self.menus:
+            menu.mouse_move(pos)
         self.txtField.mouseMotion(pos)
         if 145 <= pos[0] and 150 <= pos[1]:
             self.cursor_in_txt = True
@@ -724,6 +688,8 @@ compile_run_btn.onClick = compile_run_cpp
 skin_btn = Button("res/icons/skin.png", "res/icons/btn_bg.bmp", 670, 45, ide.appID)
 skin_btn.onClick = get_skin
 
+judge_btn = Button
+
 ide.addButton(new_btn)
 ide.addButton(open_btn)
 
@@ -733,6 +699,9 @@ ide.addButton(compile_btn)
 ide.addButton(run_btn)
 ide.addButton(compile_run_btn)
 ide.addButton(skin_btn)
+
+ide.add_menu(Menu({"file": {"what": lambda a, b: print('p r e s s e d')}}, 0, 0, framework.mono))
+
 framework.appID = ide.appID
 framework.addApp(ide)
 ide.enableTxtField(340, 190, 93, 27)
