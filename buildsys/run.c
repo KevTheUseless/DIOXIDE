@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
 	if (argc < 2)
 	{
-		printf("Missing argument.\nUsage: ./run <filename>\nPress any key to continue. . . ");
+		printf("Missing argument.\nUsage: ./run <filename> [<return_time>]\nPress any key to continue. . . ");
 		getch();
 		return 0;
 	}
@@ -17,4 +17,5 @@ int main(int argc, char **argv)
 	printf("\nProcess terminated with return code %d after %f seconds.\n", exitcode, ((double) (t1 - t0) / CLOCKS_PER_SEC));
 	printf("Press any key to continue. . . ");
 	getch();
+	return 0;
 }
