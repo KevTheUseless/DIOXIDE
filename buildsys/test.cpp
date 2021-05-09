@@ -2,8 +2,8 @@
 
 int main()
 {
-    char buf[1024];
-    scanf("%s", buf);
-    puts(buf);
+    int a, b;
+    scanf("%d%d", &a, &b);
+    printf("%d\n", a + b);
     return 0;
 }

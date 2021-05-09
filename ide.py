@@ -1,7 +1,6 @@
 import pygame, sys, wx, subprocess, re, time, os
 from io import TextIOWrapper
 from button import Button
-from menu import Menu
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -118,6 +117,10 @@ def get_skin(self, app):
 
     parse(app.txtField, app.txtField.palette)
 
+def judge():
+    import judger
+    print(judger.judge())
+
 def calc_pos(pos, x, y):
     px, py = pos
     x = max((px - x) // 10, 0)
@@ -218,6 +221,8 @@ class Framework:
         self.apps[self.appID].mouseMotion(pos)
     def scroll(self, y):
         self.apps[self.appID].scroll(y)
+
+framework = Framework()
 
 class App:
     def __init__(self, picName):
@@ -662,7 +667,48 @@ class CompileStats:
                         pass
                 y += 20
 
-framework = Framework()
+class JudgeResults:
+    def __init__(self):
+        self.x, self.y = 5, 440
+        self.w, self.h = 35, 20           # in characters
+        self.msg, self.tmp_msg = "", ""
+        self.wait = 0
+    def onCompile(self, filename):
+        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+        compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
+
+        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+        compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
+
+        compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
+        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
+        
+        compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
+        cmd = " ".join(compileFlags)
+        self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
+        if not self.tmp_msg:
+            self.tmp_msg = self.msg + "\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % \
+                (ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
+                os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+        self.wait = 1
+
+    def draw(self, screen):
+        if self.wait: self.wait += 1
+        if self.wait == 50:
+            self.wait = 0
+            self.msg = self.tmp_msg
+        compileFnt = pygame.font.Font("res/cour.ttf", 16)
+        y = 0
+        for line in self.msg.split("\n"):
+            for i in range(0, len(line), self.w):
+                for j, ch in enumerate(line[i : i + self.w]):
+                    try:
+                        img = compileFnt.render(ch, True, (255, 255, 255))
+                        screen.blit(img, (j * 8 + self.x, y + self.y))
+                    except pygame.error:
+                        pass
+                y += 20
+
 ide = App("res/bg.jpg")
 new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 320, 45, ide.appID)
 new_btn.onClick = new
@@ -688,7 +734,7 @@ compile_run_btn.onClick = compile_run_cpp
 skin_btn = Button("res/icons/skin.png", "res/icons/btn_bg.bmp", 670, 45, ide.appID)
 skin_btn.onClick = get_skin
 
-judge_btn = Button
+judge_btn = Button("res/icons/judge.png", "res/icons/btn_bg.bmp", 720, 45, ide.appID)
 
 ide.addButton(new_btn)
 ide.addButton(open_btn)
@@ -700,7 +746,7 @@ ide.addButton(run_btn)
 ide.addButton(compile_run_btn)
 ide.addButton(skin_btn)
 
-ide.add_menu(Menu({"file": {"what": lambda a, b: print('p r e s s e d')}}, 0, 0, framework.mono))
+ide.addButton(judge_btn)
 
 framework.appID = ide.appID
 framework.addApp(ide)
