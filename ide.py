@@ -1,98 +1,17 @@
-import pygame, sys, wx, subprocess, re, time, os
+import pygame, sys, wx, time, subprocess, os
+from regex import *
+from helper import *
 from io import TextIOWrapper
-from button import Button
 from menu import Menu
 
-# FILE: helpers.py
-wapp = wx.App()
-frm = wx.Frame(None, -1, '')
-
-def getch():
-	# Code from https://blog.csdn.net/damiaomiao666/article/details/50494581
-	# by user 小杰666, with minor modifications
-
-	import sys, termios
-
-	fd = sys.stdin.fileno()
-	old = termios.tcgetattr(fd)
-	new = termios.tcgetattr(fd)
-	# turn off echo and press-enter
-	new[3] = new[3] & ~termios.ECHO & ~termios.ICANON
-
-	try:
-		termios.tcsetattr(fd, termios.TCSADRAIN, new)
-		sys.stdin.read(1)
-	finally:
-		termios.tcsetattr(fd, termios.TCSADRAIN, old)
-
-def new(self, app):
-	# TODO: integrate new file w/ multitabbing
-	temp = ""
-	flag = 0
-	try:
-		f = open(app.txtField.fileName)
-		temp = f.read()
-		f.close()
-	except: flag = 1
-	if app.txtField.getContents().rstrip() != temp.rstrip(): 
-		with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not app.txtField.fileName else app.txtField.fileName), "DIOXIDE", style=wx.OK|wx.CANCEL) as dlg:
-			if dlg.ShowModal() == wx.ID_OK:
-				if flag: save_as(None, app)
-				else: save(None, app)
-	app.enableTxtField(150, 160, 110, 40)
-
-def open_file(self, app):
-	app.txtField.txtBuffer = [[]]
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'r') as fr:
-			for ch in fr.read():
-				if ch == '\n':
-					app.txtField.txtBuffer.append([])
-				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
-		app.txtField.changeLine(0)
-	parse(app.txtField, app.txtField.palette)
-
-def save_as(self, app):
-	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
-					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'w') as fw:
-			s = ''
-			for line in app.txtField.txtBuffer:
-				for ch, clr in line:
-					s += ch
-				s += '\n'
-			fw.write(s)
-
-def save(self, app):
-	s = ''
-	for line in app.txtField.txtBuffer:
-		for ch, clr in line:
-			s += ch
-		s += '\n'
-	s = s[:-1]
-	if app.txtField.fileName:
-		with open(app.txtField.fileName, 'w') as fw:
-			fw.write(s)
-	else:
-		save_as(self, app)
-
-def compile_cpp(self, app):
+def compile_cpp(self, app, compileFlags=[]):
 	if not app.txtField.fileName:
 		save_as(self, app)
 	else: save(self, app)
-	cStats.onCompile(app.txtField.fileName)
+	cStats.onCompile(app.txtField.fileName, compileFlags)
 
 def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app)
+	compile_cpp(self, app, compileFlags)
 	run_cpp(self, app)
 
 def run_cpp(self, app):
@@ -103,74 +22,6 @@ def run_cpp(self, app):
 	cmd = " ".join(compileFlags)
 	subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-def get_skin(self, app):
-	skin = ''
-	with wx.FileDialog(frm, "Choose skin file", wildcard="GENOCIDE skin file (*.gskin)|*.gskin",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		with open(fileDialog.GetPath()) as fr:
-			skin = fr.read()
-	app.txtField.palette = eval(skin)
-	with open("current_skin.gskin", 'w') as fw:
-		fw.write(skin)
-	skin.close()
-
-	parse(app.txtField, app.txtField.palette)
-
-def calc_pos(pos, x, y):
-	px, py = pos
-	x = max((px - x) // 10, 0)
-	y = max((py - y) // 20, 0)
-	return x, y
-
-def copy(string):
-	from tkinter import Tk
-	r = Tk()
-	r.withdraw()
-	r.clipboard_clear()
-	r.clipboard_append(string)
-	r.update()
-	r.destroy()
-
-def paste():
-	from tkinter import Tk
-	r = Tk()
-	r.withdraw()
-	res = r.clipboard_get()
-	r.update()
-	r.destroy()
-	return res
-
-
-# FILE: regex.py
-call = re.compile(r"\b\S+(?=\()")
-preproc = re.compile(r"^#\S+\b")
-keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
-datatype = re.compile(r"\b(asm|auto|bool|char|double|enum|float|int|long|class|short|signed|struct|template|typedef|union|unsigned|void|wchar_t)\b")
-numeral = re.compile(r"\b(true|false|\d+)\b")
-literal = re.compile(r"(\"|\').*(\"|\')")
-comment = re.compile(r"//.*$")               # nvm about /* */ right now
-
-ex = ["call", "preproc", "keyword", "datatype", "numeral", "literal", "comment"]
-
-def parse(self, palette, lineNum=-1):
-	if lineNum < 0:
-		for i in range(len(self.txtBuffer)):
-			parse(self, palette, i)
-	line = ''
-	for i, pack in enumerate(self.txtBuffer[lineNum]):
-		line += pack[0]
-		self.txtBuffer[lineNum][i][1] = (255, 255, 255)
-	for expr_name in ex:
-		expr = eval(expr_name)
-		clr = palette[expr_name]
-		for match in expr.finditer(line):
-			for i in range(match.start(), match.end()):
-				self.txtBuffer[lineNum][i][1] = clr
-
-
-# FILE: ide.py
 class Pic:
 	def __init__(self, fileName):
 		img = pygame.image.load(fileName)
@@ -309,7 +160,7 @@ class TxtField:
 
 		self.autocomplete = {'(': ')', '[': ']', '{': '}'}
 
-		f = open("current_skin.gskin")
+		f = open("skins/current_skin.gskin")
 		self.palette = eval(f.read())
 		f.close()
 		
@@ -621,13 +472,102 @@ class TxtField:
 		self.start_y -= y
 		self.start_y = max(min(self.start_y, len(self.txtBuffer)), 0)
 
+class Button:
+	def __init__(self, picFile, bg, x, y, appID, **txt):
+		if picFile:
+			self.img = pygame.image.load(picFile).convert_alpha()
+		else:
+			self.img = None
+		self.bg = pygame.image.load(bg).convert()
+		self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
+		self.x, self.y = x, y
+		self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+		self.status = 0
+		self.appID = appID
+		self.txt = txt
+		self.onClick = None
+	def draw(self, screen):
+		screen.blit(self.bg, (self.x, self.y),
+					(self.status * self.rect.w, 0,
+					 self.rect.w, self.rect.h))
+		if self.img:
+			screen.blit(self.img, (self.x + 8, self.y + 8))
+		if self.txt:
+			screen.blit(self.txt["font"].render(self.txt["content"], True, (0, 0, 0)), \
+						(self.x + 10, self.y + self.h // 2 - 8))
+	def mouseDown(self, pos, button, app):
+		if self.rect.collidepoint(pos):
+			self.status = 2
+			self.onClick(self, app)
+	def mouseUp(self, pos, button):
+		self.status = 0
+		if not self.rect.collidepoint(pos):
+			return
+		framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
+		framework.appID = self.appID
+	def mouseMove(self, pos):
+		if self.rect.collidepoint(pos):
+			self.status = 1
+		else:
+			self.status = 0
+
+class MenuButton(Button):
+	def __init__(self, txt, font, x, y, bg='res/icons/menu_btn_bg.bmp'):
+		super().__init__(None, bg, x, y, 0, font=font, content=txt)
+
+class DropdownButton(Button):
+	def __init__(self, txt, font, x, y, with_subitem=False, bg=None):
+		super().__init__(None, bg if bg else ("res/icons/dropdown_btn_bg.bmp" if not with_subitem else "res/icons/dropdown_btn_bg_w_sub.bmp"), x, y, 0, font=font, content=txt)
+
+class Menu:
+	def __init__(self, structure, start_x, start_y, font):
+		self.structure = structure
+		self.font = font
+		self.start_x, self.start_y = start_x, start_y
+		self.start_btn = MenuButton(list(structure.keys())[0], font, start_x, start_y)
+		self.start_btn.onClick = lambda a, b: self.show_substructure(start_x, start_y + 16, ((list(structure.keys())[0]), ))
+		self.btns = [self.start_btn]
+	def show_until(self, x, y, args):
+		a = self.structure
+		self.btns = [self.start_btn]
+		self.btns[-1].onClick = lambda a, b: self.show_substructure(x, y - 26, args)
+		if not args[:-1]: return
+		for k in args[:-1]:
+			a = a[k]
+
+		for key, item in a.items():
+			self.btns.append(DropdownButton(key, self.font, x, y))
+			self.btns[-1].onClick = item if type(item) != dict else lambda a, b: self.show_substructure(x + 307, y, args + (key,))
+			y += 26
+	def show_substructure(self, x, y, args: tuple):
+		a = self.structure
+		self.tmp = []
+		self.btns = [self.start_btn]
+		for k in args:
+			a = a[k]
+
+		self.btns[-1].onClick = lambda a, b: self.show_until(x, y, args)
+		for key, item in a.items():
+			self.btns.append(DropdownButton(key, self.font, x, y))
+			self.btns[-1].onClick = item if type(item) != dict else lambda a, b: self.show_substructure(x + 307, y, args + (key,))
+			y += 26
+	def draw(self, screen):
+		for btn in self.btns:
+			btn.draw(screen)
+	def mouse_move(self, pos):
+		for btn in self.btns:
+			btn.mouseMove(pos)
+	def mouse_down(self, pos, btn, app):
+		for btn in self.btns:
+			btn.mouseDown(pos, btn, app)
+
 class CompileStats:
 	def __init__(self):
 		self.x, self.y = 5, 440
 		self.w, self.h = 35, 20           # in characters
 		self.msg, self.tmp_msg = "", ""
 		self.wait = 0
-	def onCompile(self, filename):
+	def onCompile(self, filename, compileFlags):
 		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
 		compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
@@ -637,7 +577,8 @@ class CompileStats:
 		compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
 		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
 		
-		compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
+		compileFlags.insert(0, filename.rstrip(".cpp"))
+		compileFlags.insert(0, 'buildsys/build')
 		cmd = " ".join(compileFlags)
 		self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
 		if not self.tmp_msg:
@@ -662,6 +603,7 @@ class CompileStats:
 					except pygame.error:
 						pass
 				y += 20
+
 
 framework = Framework()
 ide = App("res/bg.jpg")
