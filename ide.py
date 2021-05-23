@@ -38,7 +38,7 @@ def new(self, app):
 			if dlg.ShowModal() == wx.ID_OK:
 				if flag: save_as(None, app)
 				else: save(None, app)
-	app.enableTxtField(150, 160, 110, 40)
+	app.enableTxtField(340, 160, 93, 27)
 
 def open_file(self, app):
 	app.txtField.txtBuffer = [[]]
@@ -118,8 +118,8 @@ def get_skin(self, app):
 	parse(app.txtField, app.txtField.palette)
 
 def judge():
-    import judger
-    print(judger.judge())
+	import judger
+	print(judger.judge())
 
 def calc_pos(pos, x, y):
 	px, py = pos
@@ -147,7 +147,7 @@ def paste():
 
 
 # FILE: regex.py
-call = re.compile(r"\b\S+(?=\()")
+call = re.compile(r"(?:.*(\.|\b))\S+(?=\()")
 preproc = re.compile(r"^#\S+\b")
 keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
 datatype = re.compile(r"\b(asm|auto|bool|char|double|enum|float|int|long|class|short|signed|struct|template|typedef|union|unsigned|void|wchar_t)\b")
@@ -232,7 +232,7 @@ class App:
 		self.btnList = []
 		self.tooltipList = []
 		self.menus = []
-		self.txtField = TxtField(0, 0, 0, 0, self)
+		self.txtField = None
 		self.txtFieldEnabled = False
 		self.cursor_in_txt = False
 		self.cursor_img = pygame.image.load("res/cursor.png").convert_alpha()
@@ -261,6 +261,7 @@ class App:
 	def add_menu(self, menu):
 		self.menus.append(menu)
 	def enableTxtField(self, x, y, w, h):
+		print("kjfhd")
 		self.txtFieldEnabled = True
 		self.txtField = TxtField(x, y, w, h, self)
 	def mouseDown(self, pos, button):
@@ -328,6 +329,14 @@ class TxtField:
 				self.rect = self.image.get_rect()
 
 		self.cursor = Cursor()
+
+		flg = 1
+		while flg:
+			with wx.DirDialog(frm, "Choose workspace", "", wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
+				if dlg.ShowModal() == wx.ID_OK:
+					self.workspace = dlg.GetPath()
+					flg = 0
+		print(self.workspace)
 	def getContents(self):
 		fileContents = ""
 		for line in self.txtBuffer:
@@ -669,46 +678,46 @@ class CompileStats:
 				y += 20
 
 class JudgeResults:
-    def __init__(self):
-        self.x, self.y = 5, 440
-        self.w, self.h = 35, 20           # in characters
-        self.msg, self.tmp_msg = "", ""
-        self.wait = 0
-    def onCompile(self, filename):
-        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
-        compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
+	def __init__(self):
+		self.x, self.y = 5, 440
+		self.w, self.h = 35, 20           # in characters
+		self.msg, self.tmp_msg = "", ""
+		self.wait = 0
+	def onCompile(self, filename):
+		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+		compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
-        compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
+		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+		compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-        compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
-        self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
-        
-        compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
-        cmd = " ".join(compileFlags)
-        self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
-        if not self.tmp_msg:
-            self.tmp_msg = self.msg + "\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % \
-                (ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
-                os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
-        self.wait = 1
+		compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
+		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
+		
+		compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
+		cmd = " ".join(compileFlags)
+		self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
+		if not self.tmp_msg:
+			self.tmp_msg = self.msg + "\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % \
+				(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
+				os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+		self.wait = 1
 
-    def draw(self, screen):
-        if self.wait: self.wait += 1
-        if self.wait == 50:
-            self.wait = 0
-            self.msg = self.tmp_msg
-        compileFnt = pygame.font.Font("res/cour.ttf", 16)
-        y = 0
-        for line in self.msg.split("\n"):
-            for i in range(0, len(line), self.w):
-                for j, ch in enumerate(line[i : i + self.w]):
-                    try:
-                        img = compileFnt.render(ch, True, (255, 255, 255))
-                        screen.blit(img, (j * 8 + self.x, y + self.y))
-                    except pygame.error:
-                        pass
-                y += 20
+	def draw(self, screen):
+		if self.wait: self.wait += 1
+		if self.wait == 50:
+			self.wait = 0
+			self.msg = self.tmp_msg
+		compileFnt = pygame.font.Font("res/cour.ttf", 16)
+		y = 0
+		for line in self.msg.split("\n"):
+			for i in range(0, len(line), self.w):
+				for j, ch in enumerate(line[i : i + self.w]):
+					try:
+						img = compileFnt.render(ch, True, (255, 255, 255))
+						screen.blit(img, (j * 8 + self.x, y + self.y))
+					except pygame.error:
+						pass
+				y += 20
 
 ide = App("res/bg.jpg")
 new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 320, 45, ide.appID)
@@ -753,7 +762,7 @@ ide.addButton(judge_btn)
 
 framework.appID = ide.appID
 framework.addApp(ide)
-ide.enableTxtField(340, 190, 93, 27)
+ide.enableTxtField(340, 160, 93, 27)
 cStats = CompileStats()
 
 while True:
