@@ -1,5 +1,3 @@
-from button import MenuButton, DropdownButton
-
 class Menu:
 	def __init__(self, structure, start_x, start_y, font):
 		self.structure = structure
