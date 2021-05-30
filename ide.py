@@ -111,7 +111,7 @@ def get_skin(self, app):
 		with open(fileDialog.GetPath()) as fr:
 			skin = fr.read()
 	app.txtField.palette = eval(skin)
-	with open("current_skin.gskin", 'w') as fw:
+	with open("skins/current_skin.gskin", 'w') as fw:
 		fw.write(skin)
 	skin.close()
 
@@ -261,7 +261,6 @@ class App:
 	def add_menu(self, menu):
 		self.menus.append(menu)
 	def enableTxtField(self, x, y, w, h):
-		print("kjfhd")
 		self.txtFieldEnabled = True
 		self.txtField = TxtField(x, y, w, h, self)
 	def mouseDown(self, pos, button):
@@ -315,7 +314,7 @@ class TxtField:
 
 		self.autocomplete = {'(': ')', '[': ']', '{': '}'}
 
-		f = open("current_skin.gskin")
+		f = open("skins/current_skin.gskin")
 		self.palette = eval(f.read())
 		f.close()
 		
