@@ -31,14 +31,15 @@ class Button:
         self.status = 0
         if not self.rect.collidepoint(pos):
             return
-        framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
-        framework.appID = self.appID
+        #framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
+        #framework.appID = self.appID
     def mouseMove(self, pos):
         if self.rect.collidepoint(pos):
             self.status = 1
         else:
             self.status = 0
 
+"""
 class MenuButton(Button):
     def __init__(self, txt, font, x, y, bg='res/icons/menu_btn_bg.bmp'):
         super().__init__(None, bg, x, y, 0, font=font, content=txt)
@@ -46,3 +47,4 @@ class MenuButton(Button):
 class DropdownButton(Button):
     def __init__(self, txt, font, x, y, with_subitem=False, bg=None):
         super().__init__(None, bg if bg else ("res/icons/dropdown_btn_bg.bmp" if not with_subitem else "res/icons/dropdown_btn_bg_w_sub.bmp"), x, y, 0, font=font, content=txt)
+"""

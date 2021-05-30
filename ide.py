@@ -1,6 +1,8 @@
 import pygame, sys, wx, subprocess, re, time, os
 from io import TextIOWrapper
 from button import Button
+from const import *
+from folder import FolderHierarchy
 
 # FILE: helpers.py
 wapp = wx.App()
@@ -40,20 +42,22 @@ def new(self, app):
 				else: save(None, app)
 	app.enableTxtField(340, 160, 93, 27)
 
-def open_file(self, app):
+def open_file(self, app, path=''):
+	print(path)
+	if not path:
+		with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
+						   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+			if fileDialog.ShowModal() == wx.ID_CANCEL:
+				return
+			path = fileDialog.GetPath()
 	app.txtField.txtBuffer = [[]]
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'r') as fr:
-			for ch in fr.read():
-				if ch == '\n':
-					app.txtField.txtBuffer.append([])
-				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
-		app.txtField.changeLine(0)
+	app.txtField.fileName = path
+	with open(path, 'r') as fr:
+		for ch in fr.read():
+			if ch == '\n':
+				app.txtField.txtBuffer.append([])
+			else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
+	app.txtField.changeLine(0)
 	parse(app.txtField, app.txtField.palette)
 
 def save_as(self, app):
@@ -195,7 +199,6 @@ class Framework:
 		self.screen = pygame.display.set_mode((1280, 720))
 		pygame.display.set_caption("DIOXIDE")
 		self.clock = pygame.time.Clock()
-		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 		self.segoe = pygame.font.Font("res/segoeui.ttf", 14)
 		self.speed = 5
 		self.mousePos = (0, 0)
@@ -237,6 +240,17 @@ class App:
 		self.cursor_in_txt = False
 		self.cursor_img = pygame.image.load("res/cursor.png").convert_alpha()
 		self.cursor_rect = self.cursor_img.get_rect()
+
+		# folder hierarchy
+		flg = 1
+		while flg:
+			with wx.DirDialog(frm, "Choose workspace", "", wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
+				if dlg.ShowModal() == wx.ID_OK:
+					self.workspace = dlg.GetPath()
+					flg = 0
+		self.folder_display = FolderHierarchy(self, self.workspace)
+		for btn in self.folder_display.buttons:
+			btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'])
 	def draw(self, screen):
 		if framework.appID != self.appID:
 			return
@@ -253,6 +267,7 @@ class App:
 		if self.cursor_in_txt:
 			self.cursor_rect.center = pygame.mouse.get_pos()
 			screen.blit(self.cursor_img, self.cursor_rect)
+		self.folder_display.draw(screen)
 	def addButton(self, b):
 		self.btnList.append(b)
 	def addTooltip(self, txt, font, x, y, c, rect):
@@ -269,10 +284,12 @@ class App:
 		for menu in self.menus:
 			menu.mouse_down(pos, button, self)
 		self.txtField.mouseDown(pos, button)
+		self.folder_display.mouse_down(pos, button)
 	def mouseUp(self, pos, button):
 		for button in self.btnList:
 			button.mouseUp(pos, button)
 		self.txtField.mouseUp(pos, button)
+		self.folder_display.mouse_up(pos, button)
 	def mouseMotion(self, pos):
 		framework.mousePos = pos
 		for btn in self.btnList:
@@ -280,6 +297,7 @@ class App:
 		for menu in self.menus:
 			menu.mouse_move(pos)
 		self.txtField.mouseMotion(pos)
+		self.folder_display.mouse_move(pos)
 		if 145 <= pos[0] and 150 <= pos[1]:
 			self.cursor_in_txt = True
 		else: self.cursor_in_txt = False
@@ -304,7 +322,6 @@ class TxtField:
 		self.currentChar, self.loc = 0, 0
 		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
-		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 
 		self.fileName = ""
 
@@ -329,13 +346,6 @@ class TxtField:
 
 		self.cursor = Cursor()
 
-		flg = 1
-		while flg:
-			with wx.DirDialog(frm, "Choose workspace", "", wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
-				if dlg.ShowModal() == wx.ID_OK:
-					self.workspace = dlg.GetPath()
-					flg = 0
-		print(self.workspace)
 	def getContents(self):
 		fileContents = ""
 		for line in self.txtBuffer:
@@ -431,13 +441,13 @@ class TxtField:
 		for j, line in enumerate(self.txtBuffer[self.start_y:self.start_y + self.h]):
 			for i, ch in enumerate(line[self.start_x:self.start_x + self.w]):
 				if ch[0] == '\t':
-					img = self.mono.render(' ', True, ch[1])
+					img = code_font.render(' ', True, ch[1])
 				else:
-					img = self.mono.render(ch[0], True, ch[1])
+					img = code_font.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, j * 20 + self.y - 5))
 
 		for i in range(min(len(self.txtBuffer), self.h)):
-			screen.blit(self.mono.render(str(i+1+self.start_y), True, (100, 100, 100)),
+			screen.blit(code_font.render(str(i+1+self.start_y), True, (100, 100, 100)),
 						(self.x - len(str(i+self.start_y+1)) * 10 - 15, self.y + i * 20 - 5))
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
