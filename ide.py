@@ -1,17 +1,19 @@
-import pygame, sys, wx, time, subprocess, os
-from regex import *
-from helper import *
+import pygame, sys, wx, subprocess, re, time, os
 from io import TextIOWrapper
-from menu import Menu
 
-def compile_cpp(self, app, compileFlags=[]):
+from button import Button
+from const import *
+from helper import *
+from folder import FolderHierarchy
+
+def compile_cpp(self, app):
 	if not app.txtField.fileName:
 		save_as(self, app)
 	else: save(self, app)
-	cStats.onCompile(app.txtField.fileName, compileFlags)
+	cStats.onCompile(app.txtField.fileName)
 
 def compile_run_cpp(self, app, compileFlags=[]):
-	compile_cpp(self, app, compileFlags)
+	compile_cpp(self, app)
 	run_cpp(self, app)
 
 def run_cpp(self, app):
@@ -22,6 +24,78 @@ def run_cpp(self, app):
 	cmd = " ".join(compileFlags)
 	subprocess.run(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
+def get_skin(self, app):
+	skin = ''
+	with wx.FileDialog(frm, "Choose skin file", wildcard="GENOCIDE skin file (*.gskin)|*.gskin",
+					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+		if fileDialog.ShowModal() == wx.ID_CANCEL:
+			return
+		with open(fileDialog.GetPath()) as fr:
+			skin = fr.read()
+	app.txtField.palette = eval(skin)
+	with open("skins/current_skin.gskin", 'w') as fw:
+		fw.write(skin)
+	skin.close()
+
+	parse(app.txtField, app.txtField.palette)
+
+def judge(self, app):
+	import judger
+	subprocess.run(judger.judge())
+
+def calc_pos(pos, x, y):
+	px, py = pos
+	x = max((px - x) // 10, 0)
+	y = max((py - y) // 20, 0)
+	return x, y
+
+def copy(string):
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	r.clipboard_clear()
+	r.clipboard_append(string)
+	r.update()
+	r.destroy()
+
+def paste():
+	from tkinter import Tk
+	r = Tk()
+	r.withdraw()
+	res = r.clipboard_get()
+	r.update()
+	r.destroy()
+	return res
+
+
+# ===== REGEX =====
+call = re.compile(r"(?:.*(\.|\b))\S+(?=\()")
+preproc = re.compile(r"^#\S+\b")
+keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
+datatype = re.compile(r"\b(asm|auto|bool|char|double|enum|float|int|long|class|short|signed|struct|template|typedef|union|unsigned|void|wchar_t)\b")
+numeral = re.compile(r"\b(true|false|\d+)\b")
+literal = re.compile(r"(\"|\').*(\"|\')")
+comment = re.compile(r"//.*$")               # nvm about /* */ right now
+
+ex = ["call", "preproc", "keyword", "datatype", "numeral", "literal", "comment"]
+
+def parse(self, palette, lineNum=-1):
+	if lineNum < 0:
+		for i in range(len(self.txtBuffer)):
+			parse(self, palette, i)
+	line = ''
+	for i, pack in enumerate(self.txtBuffer[lineNum]):
+		line += pack[0]
+		self.txtBuffer[lineNum][i][1] = (255, 255, 255)
+	for expr_name in ex:
+		expr = eval(expr_name)
+		clr = palette[expr_name]
+		for match in expr.finditer(line):
+			for i in range(match.start(), match.end()):
+				self.txtBuffer[lineNum][i][1] = clr
+
+
+# ===== IDE =====
 class Pic:
 	def __init__(self, fileName):
 		img = pygame.image.load(fileName)
@@ -43,7 +117,6 @@ class Framework:
 		self.screen = pygame.display.set_mode((1280, 720))
 		pygame.display.set_caption("DIOXIDE")
 		self.clock = pygame.time.Clock()
-		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
 		self.segoe = pygame.font.Font("res/segoeui.ttf", 14)
 		self.speed = 5
 		self.mousePos = (0, 0)
@@ -71,6 +144,8 @@ class Framework:
 	def scroll(self, y):
 		self.apps[self.appID].scroll(y)
 
+framework = Framework()
+
 class App:
 	def __init__(self, picName):
 		self.pic = Pic(picName)
@@ -78,11 +153,23 @@ class App:
 		self.btnList = []
 		self.tooltipList = []
 		self.menus = []
-		self.txtField = TxtField(0, 0, 0, 0, self)
+		self.txtField = None
 		self.txtFieldEnabled = False
 		self.cursor_in_txt = False
 		self.cursor_img = pygame.image.load("res/cursor.png").convert_alpha()
 		self.cursor_rect = self.cursor_img.get_rect()
+
+		# folder hierarchy
+		flg = 1
+		while flg:
+			with wx.DirDialog(frm, "Choose workspace", "", wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
+				if dlg.ShowModal() == wx.ID_OK:
+					self.workspace = dlg.GetPath()
+					flg = 0
+		self.folder_display = FolderHierarchy(self, self.workspace)
+		for btn in self.folder_display.buttons:
+			try: btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'])
+			except: pass
 	def draw(self, screen):
 		if framework.appID != self.appID:
 			return
@@ -99,6 +186,7 @@ class App:
 		if self.cursor_in_txt:
 			self.cursor_rect.center = pygame.mouse.get_pos()
 			screen.blit(self.cursor_img, self.cursor_rect)
+		self.folder_display.draw(screen)
 	def addButton(self, b):
 		self.btnList.append(b)
 	def addTooltip(self, txt, font, x, y, c, rect):
@@ -115,10 +203,12 @@ class App:
 		for menu in self.menus:
 			menu.mouse_down(pos, button, self)
 		self.txtField.mouseDown(pos, button)
+		self.folder_display.mouse_down(pos, button)
 	def mouseUp(self, pos, button):
 		for button in self.btnList:
 			button.mouseUp(pos, button)
 		self.txtField.mouseUp(pos, button)
+		self.folder_display.mouse_up(pos, button)
 	def mouseMotion(self, pos):
 		framework.mousePos = pos
 		for btn in self.btnList:
@@ -126,6 +216,7 @@ class App:
 		for menu in self.menus:
 			menu.mouse_move(pos)
 		self.txtField.mouseMotion(pos)
+		self.folder_display.mouse_move(pos)
 		if 145 <= pos[0] and 150 <= pos[1]:
 			self.cursor_in_txt = True
 		else: self.cursor_in_txt = False
@@ -150,8 +241,7 @@ class TxtField:
 		self.currentChar, self.loc = 0, 0
 		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
-		self.mono = pygame.font.Font("res/JetBrainsMono-Regular.ttf", 18)
-
+		
 		self.fileName = ""
 
 		self.selecting = False
@@ -174,6 +264,7 @@ class TxtField:
 				self.rect = self.image.get_rect()
 
 		self.cursor = Cursor()
+
 	def getContents(self):
 		fileContents = ""
 		for line in self.txtBuffer:
@@ -269,13 +360,13 @@ class TxtField:
 		for j, line in enumerate(self.txtBuffer[self.start_y:self.start_y + self.h]):
 			for i, ch in enumerate(line[self.start_x:self.start_x + self.w]):
 				if ch[0] == '\t':
-					img = self.mono.render(' ', True, ch[1])
+					img = code_font.render(' ', True, ch[1])
 				else:
-					img = self.mono.render(ch[0], True, ch[1])
+					img = code_font.render(ch[0], True, ch[1])
 				screen.blit(img, (self.x + i * 10, j * 20 + self.y - 5))
 
 		for i in range(min(len(self.txtBuffer), self.h)):
-			screen.blit(self.mono.render(str(i+1+self.start_y), True, (100, 100, 100)),
+			screen.blit(code_font.render(str(i+1+self.start_y), True, (100, 100, 100)),
 						(self.x - len(str(i+self.start_y+1)) * 10 - 15, self.y + i * 20 - 5))
 	def keyUp(self, key):
 		if key == pygame.K_LSHIFT or key == pygame.K_RSHIFT:
@@ -472,102 +563,13 @@ class TxtField:
 		self.start_y -= y
 		self.start_y = max(min(self.start_y, len(self.txtBuffer)), 0)
 
-class Button:
-	def __init__(self, picFile, bg, x, y, appID, **txt):
-		if picFile:
-			self.img = pygame.image.load(picFile).convert_alpha()
-		else:
-			self.img = None
-		self.bg = pygame.image.load(bg).convert()
-		self.w, self.h = self.bg.get_width() // 3, self.bg.get_height()
-		self.x, self.y = x, y
-		self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
-		self.status = 0
-		self.appID = appID
-		self.txt = txt
-		self.onClick = None
-	def draw(self, screen):
-		screen.blit(self.bg, (self.x, self.y),
-					(self.status * self.rect.w, 0,
-					 self.rect.w, self.rect.h))
-		if self.img:
-			screen.blit(self.img, (self.x + 8, self.y + 8))
-		if self.txt:
-			screen.blit(self.txt["font"].render(self.txt["content"], True, (0, 0, 0)), \
-						(self.x + 10, self.y + self.h // 2 - 8))
-	def mouseDown(self, pos, button, app):
-		if self.rect.collidepoint(pos):
-			self.status = 2
-			self.onClick(self, app)
-	def mouseUp(self, pos, button):
-		self.status = 0
-		if not self.rect.collidepoint(pos):
-			return
-		framework.apps[self.appID].pic.draw(framework.screen, framework.speed)
-		framework.appID = self.appID
-	def mouseMove(self, pos):
-		if self.rect.collidepoint(pos):
-			self.status = 1
-		else:
-			self.status = 0
-
-class MenuButton(Button):
-	def __init__(self, txt, font, x, y, bg='res/icons/menu_btn_bg.bmp'):
-		super().__init__(None, bg, x, y, 0, font=font, content=txt)
-
-class DropdownButton(Button):
-	def __init__(self, txt, font, x, y, with_subitem=False, bg=None):
-		super().__init__(None, bg if bg else ("res/icons/dropdown_btn_bg.bmp" if not with_subitem else "res/icons/dropdown_btn_bg_w_sub.bmp"), x, y, 0, font=font, content=txt)
-
-class Menu:
-	def __init__(self, structure, start_x, start_y, font):
-		self.structure = structure
-		self.font = font
-		self.start_x, self.start_y = start_x, start_y
-		self.start_btn = MenuButton(list(structure.keys())[0], font, start_x, start_y)
-		self.start_btn.onClick = lambda a, b: self.show_substructure(start_x, start_y + 16, ((list(structure.keys())[0]), ))
-		self.btns = [self.start_btn]
-	def show_until(self, x, y, args):
-		a = self.structure
-		self.btns = [self.start_btn]
-		self.btns[-1].onClick = lambda a, b: self.show_substructure(x, y - 26, args)
-		if not args[:-1]: return
-		for k in args[:-1]:
-			a = a[k]
-
-		for key, item in a.items():
-			self.btns.append(DropdownButton(key, self.font, x, y))
-			self.btns[-1].onClick = item if type(item) != dict else lambda a, b: self.show_substructure(x + 307, y, args + (key,))
-			y += 26
-	def show_substructure(self, x, y, args: tuple):
-		a = self.structure
-		self.tmp = []
-		self.btns = [self.start_btn]
-		for k in args:
-			a = a[k]
-
-		self.btns[-1].onClick = lambda a, b: self.show_until(x, y, args)
-		for key, item in a.items():
-			self.btns.append(DropdownButton(key, self.font, x, y))
-			self.btns[-1].onClick = item if type(item) != dict else lambda a, b: self.show_substructure(x + 307, y, args + (key,))
-			y += 26
-	def draw(self, screen):
-		for btn in self.btns:
-			btn.draw(screen)
-	def mouse_move(self, pos):
-		for btn in self.btns:
-			btn.mouseMove(pos)
-	def mouse_down(self, pos, btn, app):
-		for btn in self.btns:
-			btn.mouseDown(pos, btn, app)
-
 class CompileStats:
 	def __init__(self):
 		self.x, self.y = 5, 440
 		self.w, self.h = 35, 20           # in characters
 		self.msg, self.tmp_msg = "", ""
 		self.wait = 0
-	def onCompile(self, filename, compileFlags):
+	def onCompile(self, filename):
 		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
 		compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
@@ -577,8 +579,7 @@ class CompileStats:
 		compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
 		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
 		
-		compileFlags.insert(0, filename.rstrip(".cpp"))
-		compileFlags.insert(0, 'buildsys/build')
+		compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
 		cmd = " ".join(compileFlags)
 		self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
 		if not self.tmp_msg:
@@ -604,8 +605,48 @@ class CompileStats:
 						pass
 				y += 20
 
+class JudgeResults:
+	def __init__(self):
+		self.x, self.y = 5, 440
+		self.w, self.h = 35, 20           # in characters
+		self.msg, self.tmp_msg = "", ""
+		self.wait = 0
+	def onCompile(self, filename):
+		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpversion"
+		compilerVer = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
 
-framework = Framework()
+		cmd = ("compilers/MinGW/bin/gcc" if os.name == "nt" else "gcc") + " -dumpmachine"
+		compilerBuild = subprocess.run(cmd, capture_output=True).stdout.decode('utf-8')
+
+		compilerName = ("MinGW " if "mingw" in compilerBuild else "") + "GCC " + compilerVer
+		self.msg = "Compiling...\n--------\n- Filename: %s\n- Compiler Name: %s\n \nCompilation results..." % (ide.txtField.fileName, compilerName)
+		
+		compileFlags = ['buildsys/build', filename.rstrip(".cpp")]
+		cmd = " ".join(compileFlags)
+		self.tmp_msg = subprocess.run(cmd, capture_output=True).stderr.decode('utf-8')
+		if not self.tmp_msg:
+			self.tmp_msg = self.msg + "\n--------\n- Output Filename: %s\n- Output Size: %f KiB" % \
+				(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "", \
+				os.stat(ide.txtField.fileName.rstrip(".cpp") + ".exe" if os.name == "nt" else "").st_size / 1024)
+		self.wait = 1
+
+	def draw(self, screen):
+		if self.wait: self.wait += 1
+		if self.wait == 50:
+			self.wait = 0
+			self.msg = self.tmp_msg
+		compileFnt = pygame.font.Font("res/cour.ttf", 16)
+		y = 0
+		for line in self.msg.split("\n"):
+			for i in range(0, len(line), self.w):
+				for j, ch in enumerate(line[i : i + self.w]):
+					try:
+						img = compileFnt.render(ch, True, (255, 255, 255))
+						screen.blit(img, (j * 8 + self.x, y + self.y))
+					except pygame.error:
+						pass
+				y += 20
+
 ide = App("res/bg.jpg")
 new_btn = Button("res/icons/new.png", "res/icons/btn_bg.bmp", 320, 45, ide.appID)
 new_btn.onClick = new
@@ -645,11 +686,11 @@ ide.addButton(compile_run_btn)
 ide.addButton(judge_btn)
 ide.addButton(skin_btn)
 
-ide.add_menu(Menu({"file": {"what": lambda a, b: print('p r e s s e d')}}, 0, 0, framework.segoe))
+ide.addButton(judge_btn)
 
 framework.appID = ide.appID
 framework.addApp(ide)
-ide.enableTxtField(340, 190, 93, 27)
+ide.enableTxtField(340, 160, 93, 27)
 cStats = CompileStats()
 
 while True:
