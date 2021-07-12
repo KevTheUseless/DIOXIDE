@@ -67,7 +67,6 @@ def paste():
 	r.destroy()
 	return res
 
-
 # ===== REGEX =====
 call = re.compile(r"(?:.*(\.|\b))\S+(?=\()")
 preproc = re.compile(r"^#\S+\b")
@@ -241,7 +240,6 @@ class TxtField:
 		self.currentChar, self.loc = 0, 0
 		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
-		
 		self.fileName = ""
 
 		self.selecting = False

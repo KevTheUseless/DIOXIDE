@@ -38,6 +38,7 @@ def new(self, app):
 				else: save(None, app)
 	app.enableTxtField(150, 160, 110, 40)
 
+
 def open_file(self, app, path = ""):
 	app.txtField.txtBuffer = [[]]
 	if not path:
@@ -82,7 +83,7 @@ def save(self, app):
 			fw.write(s)
 	else:
 		save_as(self, app)
-
+    
 def get_skin(self, app):
 	skin = ''
 	with wx.FileDialog(frm, "Choose skin file", wildcard="GENOCIDE skin file (*.gskin)|*.gskin",
