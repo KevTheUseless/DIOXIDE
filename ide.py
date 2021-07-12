@@ -1,92 +1,10 @@
 import pygame, sys, wx, subprocess, re, time, os
 from io import TextIOWrapper
+
 from button import Button
 from const import *
+from helper import *
 from folder import FolderHierarchy
-
-# FILE: helpers.py
-wapp = wx.App()
-frm = wx.Frame(None, -1, '')
-
-def getch():
-	# Code from https://blog.csdn.net/damiaomiao666/article/details/50494581
-	# by user 小杰666, with minor modifications
-
-	import sys, termios
-
-	fd = sys.stdin.fileno()
-	old = termios.tcgetattr(fd)
-	new = termios.tcgetattr(fd)
-	# turn off echo and press-enter
-	new[3] = new[3] & ~termios.ECHO & ~termios.ICANON
-
-	try:
-		termios.tcsetattr(fd, termios.TCSADRAIN, new)
-		sys.stdin.read(1)
-	finally:
-		termios.tcsetattr(fd, termios.TCSADRAIN, old)
-
-def new(self, app):
-	# TODO: integrate new file w/ multitabbing
-	temp = ""
-	flag = 0
-	try:
-		f = open(app.txtField.fileName)
-		temp = f.read()
-		f.close()
-	except: flag = 1
-	if app.txtField.getContents().rstrip() != temp.rstrip(): 
-		with wx.MessageDialog(frm, "Do you want to save the changes you made to %s?\nYour changes will be lost if you dont save them." % ("Untitled.cpp" if not app.txtField.fileName else app.txtField.fileName), "DIOXIDE", style=wx.OK|wx.CANCEL) as dlg:
-			if dlg.ShowModal() == wx.ID_OK:
-				if flag: save_as(None, app)
-				else: save(None, app)
-	app.enableTxtField(340, 160, 93, 27)
-
-def open_file(self, app, path=''):
-	print(path)
-	if not path:
-		with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-						   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-			if fileDialog.ShowModal() == wx.ID_CANCEL:
-				return
-			path = fileDialog.GetPath()
-	app.txtField.txtBuffer = [[]]
-	app.txtField.fileName = path
-	with open(path, 'r') as fr:
-		for ch in fr.read():
-			if ch == '\n':
-				app.txtField.txtBuffer.append([])
-			else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
-	app.txtField.changeLine(0)
-	parse(app.txtField, app.txtField.palette)
-
-def save_as(self, app):
-	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
-					   style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'w') as fw:
-			s = ''
-			for line in app.txtField.txtBuffer:
-				for ch, clr in line:
-					s += ch
-				s += '\n'
-			fw.write(s)
-
-def save(self, app):
-	s = ''
-	for line in app.txtField.txtBuffer:
-		for ch, clr in line:
-			s += ch
-		s += '\n'
-	s = s[:-1]
-	if app.txtField.fileName:
-		with open(app.txtField.fileName, 'w') as fw:
-			fw.write(s)
-	else:
-		save_as(self, app)
 
 def compile_cpp(self, app):
 	if not app.txtField.fileName:
@@ -121,9 +39,9 @@ def get_skin(self, app):
 
 	parse(app.txtField, app.txtField.palette)
 
-def judge():
+def judge(self, app):
 	import judger
-	print(judger.judge())
+	subprocess.run(judger.judge())
 
 def calc_pos(pos, x, y):
 	px, py = pos
@@ -149,8 +67,7 @@ def paste():
 	r.destroy()
 	return res
 
-
-# FILE: regex.py
+# ===== REGEX =====
 call = re.compile(r"(?:.*(\.|\b))\S+(?=\()")
 preproc = re.compile(r"^#\S+\b")
 keyword = re.compile(r"\b(break|case|catch|const|const_cast|continue|default|delete|do|dynamic_cast|else|explicit|export|extern|for|friend|goto|if|inline|mutable|namespace|new|operator|private|protected|public|register|reinterpret_cast|return|sizeof|static|static_cast|switch|this|throw|try|typeid|typename|using|virtual|volatile|while)\b")
@@ -177,7 +94,7 @@ def parse(self, palette, lineNum=-1):
 				self.txtBuffer[lineNum][i][1] = clr
 
 
-# FILE: ide.py
+# ===== IDE =====
 class Pic:
 	def __init__(self, fileName):
 		img = pygame.image.load(fileName)
@@ -250,7 +167,8 @@ class App:
 					flg = 0
 		self.folder_display = FolderHierarchy(self, self.workspace)
 		for btn in self.folder_display.buttons:
-			btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'])
+			try: btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'])
+			except: pass
 	def draw(self, screen):
 		if framework.appID != self.appID:
 			return
@@ -322,7 +240,6 @@ class TxtField:
 		self.currentChar, self.loc = 0, 0
 		self.lineNum = 0; self.start_y, self.start_x = 0, 0
 		self.cLineStr = ""
-
 		self.fileName = ""
 
 		self.selecting = False
