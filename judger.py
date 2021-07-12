@@ -1,7 +1,9 @@
 import sys, re, subprocess as s
 import os
 
-def judge(filename = "std"):
+resStr = "AWTMR"
+
+def judge(filename = "judge/std"):
 	sample_in_list = []
 	sample_out_list = []
 	for file in os.listdir("judge"):
@@ -9,42 +11,13 @@ def judge(filename = "std"):
 			sample_in_list.append("judge/" + file)
 			sample_out_list.append("judge/%sout" % file[:-2])
 	print(sample_in_list, sample_out_list)
-	return "python vis.py %s" % ''.join(_judge(filename, sample_in_list, sample_out_list))
+	return "python vis.py %s" % ''.join(_judge(filename, sample_in_list, sample_out_list, "2000", "256M"))
 
 
-def _judge(filename, sample_in_list: list, sample_out_list: list):
+def _judge(filename, sample_in_list: list, sample_out_list: list, tLimit: str, mLimit: str):
 	res = ["A"] * len(sample_in_list)
 	for i, sample_in in enumerate(sample_in_list):
 		sample_out = sample_out_list[i]
-		sout = []; out = []
-		with open(sample_out) as fr:
-			for line in fr.read().split('\n'):
-				l = line.lstrip().rstrip()
-				if l:
-					sout.append(l)
-		with open(sample_in) as fr:
-			processedIn = s.Popen("type %s" % sample_in.replace("/", "\\"), shell=True, stdout=s.PIPE)
-			#print(processedIn.communicate())
-			o = s.Popen("judger/procgov --timeout 1000 -q %s" % filename, shell=True, stdin=processedIn.stdout, stdout=s.PIPE)
-			o2 = s.Popen("judger/procgov --maxmem 256M -q %s" % filename, shell=True, stdin=processedIn.stdout, stdout=s.PIPE)
-
-			print(o.stdout.read())
-			print(o2.stdout.read())
-			
-			if not o:
-				res[i] = "T"
-				continue
-			if not o2:
-				res[i] = "M"
-				continue
-#			if o.returncode or o2.returncode:
-#				res[i] = "re"
-#				continue
-			for line in o.stdout.read().split('\n'):
-				l = line.lstrip().rstrip()
-				if l:
-					out.append(l)
-		if sout != out:
-			res[i] = "W"
-			continue
+		ret = os.system("judger/judge %s %s %s %s %s" % (os.path.realpath(filename), os.path.realpath(sample_in), os.path.realpath(sample_out), tLimit, mLimit))
+		res[i] = resStr[ret]
 	return res
