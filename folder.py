@@ -20,11 +20,11 @@ class FolderHierarchy:
 
     def get_buttons(self, dt, x, y):
         for item in dt:
-            self.buttons.append(Button(None, "res/icons/folder_btn_bg.bmp", x, y, self.app.appID,
-                                font=ui_font, content=item))
+            self.buttons.append(Button(None, "res/icons/folder_btn_bg.bmp", 0, y, self.app.appID,
+                                font=ui_font, content='    ' * x + item, color=(255, 255, 255)))
             if dt[item]:
-                y = self.get_buttons(dt[item], x + 10, y + 26)
-            else: y += 26
+                y = self.get_buttons(dt[item], x + 1, y + 20)
+            else: y += 20
         return y
 
     def draw(self, screen):

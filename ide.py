@@ -250,7 +250,7 @@ class App:
 					flg = 0
 		self.folder_display = FolderHierarchy(self, self.workspace)
 		for btn in self.folder_display.buttons:
-			btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'])
+			btn.onClick = lambda s, app: open_file(s, app, self.workspace + '/' + s.txt['content'].lstrip())
 	def draw(self, screen):
 		if framework.appID != self.appID:
 			return

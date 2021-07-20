@@ -21,7 +21,7 @@ class Button:
         if self.img:
             screen.blit(self.img, (self.x + 8, self.y + 8))
         if self.txt:
-            screen.blit(self.txt["font"].render(self.txt["content"], True, (0, 0, 0)), \
+            screen.blit(self.txt["font"].render(self.txt["content"], True, (0, 0, 0) if "color" not in self.txt.keys() else self.txt["color"]), \
                         (self.x + 10, self.y + self.h // 2 - 8))
     def mouseDown(self, pos, button, app):
         if self.rect.collidepoint(pos):
