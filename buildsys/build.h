@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#if defined(WIN32)
+#ifdef WIN32
 	#include <conio.h>
 #else
 	/* 

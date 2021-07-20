@@ -38,13 +38,15 @@ def new(self, app):
 				else: save(None, app)
 	app.enableTxtField(150, 160, 110, 40)
 
-def open_file(self, app):
+
+def open_file(self, app, path = ""):
 	app.txtField.txtBuffer = [[]]
-	with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
-					   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
-		if fileDialog.ShowModal() == wx.ID_CANCEL:
-			return
-		path = fileDialog.GetPath()
+	if not path:
+		with wx.FileDialog(frm, "Open file", wildcard="Any file|*",
+						   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+			if fileDialog.ShowModal() == wx.ID_CANCEL:
+				return
+			path = fileDialog.GetPath()
 		app.txtField.fileName = path
 		with open(path, 'r') as fr:
 			for ch in fr.read():
@@ -52,7 +54,7 @@ def open_file(self, app):
 					app.txtField.txtBuffer.append([])
 				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
 		app.txtField.changeLine(0)
-	parse(app.txtField, app.txtField.palette)
+		parse(app.txtField, app.txtField.palette)
 
 def save_as(self, app):
 	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
@@ -81,10 +83,7 @@ def save(self, app):
 			fw.write(s)
 	else:
 		save_as(self, app)
-
-def judge(self, app):
-	pass
-
+    
 def get_skin(self, app):
 	skin = ''
 	with wx.FileDialog(frm, "Choose skin file", wildcard="GENOCIDE skin file (*.gskin)|*.gskin",
