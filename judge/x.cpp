@@ -1,6 +1,6 @@
 #include <cstdio>
 int main() {
   // a+b
-  int a, b; scanf("%d%d", &a, &b);
-  printf("%d", a+b); return 0;
+  int a, b;
+  while(1); return 0;
 }
