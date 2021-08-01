@@ -47,14 +47,14 @@ def open_file(self, app, path = ""):
 			if fileDialog.ShowModal() == wx.ID_CANCEL:
 				return
 			path = fileDialog.GetPath()
-		app.txtField.fileName = path
-		with open(path, 'r') as fr:
-			for ch in fr.read():
-				if ch == '\n':
-					app.txtField.txtBuffer.append([])
-				else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
-		app.txtField.changeLine(0)
-		parse(app.txtField, app.txtField.palette)
+	app.txtField.fileName = path
+	with open(path, 'r') as fr:
+		for ch in fr.read():
+			if ch == '\n':
+				app.txtField.txtBuffer.append([])
+			else: app.txtField.txtBuffer[-1].append([ch, (255, 255, 255)])
+	app.txtField.changeLine(0)
+	parse(app.txtField, app.txtField.palette)
 
 def save_as(self, app):
 	with wx.FileDialog(frm, "Save As...", wildcard="C++ Source Files (*.cpp)|*.cpp|All Files (*.*)|*.*",
