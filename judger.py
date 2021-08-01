@@ -8,7 +8,6 @@ def judge(filename):
 		if file.endswith('.in') and os.path.isfile("judge/%sout" % file[:-2]):
 			sample_in_list.append(os.path.join("judge", file))
 			sample_out_list.append(os.path.join("judge", file[:-2] + "out"))
-	print(sample_in_list, sample_out_list)
 	return "python vis.py %s" % ''.join(_judge(filename, sample_in_list, sample_out_list))
 
 
